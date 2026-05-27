@@ -143,7 +143,7 @@ function filteredQuestions() {
     const rec = app.records[q.id];
     const marked = Boolean(app.marked[q.id]);
     const done = Boolean(rec && (rec.revealed || rec.mastered !== null || rec.correct !== null));
-    const wrong = Boolean(rec && (rec.correct === false || rec.mastered === false));
+    const wrong = Boolean(rec && (rec.firstWrong === true || rec.correct === false || rec.mastered === false));
     const correct = Boolean(rec && rec.correct === true);
     if (app.section !== "全部题型" && q.section !== app.section) return false;
 
@@ -206,7 +206,7 @@ function renderMode() {
 function renderNav(list) {
   els.questionNav.innerHTML = list.map((q, idx) => {
     const rec = app.records[q.id], done = rec && (rec.revealed || rec.mastered !== null || rec.correct !== null);
-    const wrong = rec && (rec.correct === false || rec.mastered === false), marked = app.marked[q.id];
+    const wrong = rec && (rec.firstWrong === true || rec.correct === false || rec.mastered === false), marked = app.marked[q.id];
     const cls = ["nav-item", idx === app.index && "active", done && "done", wrong && "wrong", marked && "marked"].filter(Boolean).join(" ");
     return `<button class="${cls}" data-index="${idx}" title="${escapeAttr(q.title)}">${shortLabel(q)}</button>`;
   }).join("");
@@ -241,15 +241,16 @@ function renderAnswerInput(q, rec, reveal) {
   els.choiceArea.innerHTML = ""; els.fillArea.style.display = "none"; els.subjectiveArea.style.display = "none";
   if (q.type === "choice") {
     const committed = rec.revealed;
+    const lockedCorrect = committed && rec.correct; // 已答对就锁定
     els.choiceArea.innerHTML = (q.options || []).map(o => {
       const isC = o.key === q.answer, wasC = committed && rec.selected === o.key;
       const cls = ["option-btn"]; let mark = "";
       if (committed && isC) { cls.push("correct"); mark = "✓"; }
       else if (committed && wasC) { cls.push("wrong"); mark = "✗"; }
-      return `<button class="${cls.join(" ")}" data-option="${o.key}" ${committed?"disabled":""}><span class="option-key">${o.key}</span><span class="option-label">${escapeHtml(o.text)}</span><span class="option-mark">${mark}</span></button>`;
+      return `<button class="${cls.join(" ")}" data-option="${o.key}" ${lockedCorrect?"disabled":""}><span class="option-key">${o.key}</span><span class="option-label">${escapeHtml(o.text)}</span><span class="option-mark">${mark}</span></button>`;
     }).join(""); return;
   }
-  if (q.type === "fill") { els.fillArea.style.display = "grid"; els.fillInput.value = rec.input != null ? rec.input : ""; els.fillInput.disabled = Boolean(rec.revealed); return; }
+  if (q.type === "fill") { els.fillArea.style.display = "grid"; els.fillInput.value = rec.input != null ? rec.input : ""; els.fillInput.disabled = false; return; }
   els.subjectiveArea.style.display = "grid"; els.memoryInput.value = rec.draft || "";
 }
 function renderFooter(q, rec, reveal) {
@@ -261,12 +262,16 @@ function renderFooter(q, rec, reveal) {
   else if (showSub || showMem) showFeedbackPanel("ok", q, { neutral: true });
   else hideFeedback();
   if (q.type === "choice") { els.primaryBtn.textContent = rec.revealed ? "下一题 →" : "选择答案"; els.primaryBtn.disabled = !rec.revealed; }
-  else if (q.type === "fill") { if (rec.revealed) { els.primaryBtn.textContent = "下一题 →"; els.primaryBtn.disabled = false; } else { els.primaryBtn.textContent = "提交"; els.primaryBtn.disabled = !(els.fillInput.value||"").trim(); } }
+  else if (q.type === "fill") {
+    const inputChanged = rec.revealed && (els.fillInput.value.trim() !== (rec.input || ""));
+    if (rec.revealed && !inputChanged) { els.primaryBtn.textContent = "下一题 →"; els.primaryBtn.disabled = false; }
+    else { els.primaryBtn.textContent = rec.revealed ? "重新提交" : "提交"; els.primaryBtn.disabled = !(els.fillInput.value||"").trim(); }
+  }
   else { els.primaryBtn.textContent = rec.revealed ? "下一题 →" : "查看答案"; els.primaryBtn.disabled = false; }
 }
 function showFeedbackPanel(kind, q, opts) {
   els.feedbackPanel.dataset.state = kind;
-  if (opts && opts.neutral) { els.feedbackTitle.textContent = "📖 参考答案与解析"; els.feedbackIcon.textContent = "📖"; }
+  if (opts && opts.neutral) { els.feedbackTitle.textContent = "参考答案与解析"; els.feedbackIcon.textContent = "📖"; }
   else if (kind === "ok") { els.feedbackTitle.textContent = "答对啦 🎉"; els.feedbackIcon.textContent = "✓"; }
   else { els.feedbackTitle.textContent = "答案有误"; els.feedbackIcon.textContent = "✗"; }
   els.feedbackAnswer.textContent = q.answer || "暂无答案";
@@ -278,20 +283,42 @@ function hideFeedback() { els.feedbackPanel.dataset.state = "hidden"; }
 /* ===== INTERACTIONS ===== */
 function pickOption(key) {
   const q = currentQuestion(); if (!q || q.type !== "choice") return;
-  const rec = recordFor(q.id); if (rec.revealed) return;
+  const rec = recordFor(q.id);
+  // 已经答对就不让再点
+  if (rec.revealed && rec.correct) return;
   const btn = els.choiceArea.querySelector(`[data-option="${key}"]`);
   if (btn) addOptionRipple(btn);
-  rec.selected = key; rec.correct = key === q.answer; rec.revealed = true;
-  rec.answerDismissed = false; rec.attempts = (rec.attempts||0)+1; rec.lastAt = Date.now();
-  updateStreak(rec.correct); recordAnswer(rec.correct);
-  if (rec.correct) triggerCorrectFeedback(); else triggerWrongFeedback();
+  const isFirstAnswer = !rec.revealed;
+  const correct = key === q.answer;
+  rec.selected = key;
+  // 错题记录只在首次答题时定，之后再选不改 correct（保证答错过的题永远在错题本里）
+  if (isFirstAnswer) {
+    rec.correct = correct;
+    rec.firstWrong = !correct;
+  } else if (correct) {
+    // 答错后再选对：本次答对了，但 firstWrong 保留
+    rec.correct = true;
+  }
+  rec.revealed = true;
+  rec.answerDismissed = false;
+  rec.attempts = (rec.attempts||0)+1;
+  rec.lastAt = Date.now();
+  if (isFirstAnswer) {
+    updateStreak(correct); recordAnswer(correct);
+  }
+  if (correct) triggerCorrectFeedback(); else triggerWrongFeedback();
   shakeIcon();
   render();
-  const role = chooseCheckpointMascot(rec.correct);
-  if (rec.correct) {
-    setTimeout(() => playMascotMoment(role, () => doGo(1)), 700);
-  } else {
-    playMascotMoment(role, () => doGo(1));
+  // 只在首次答题时触发15题节点动画
+  if (isFirstAnswer && answeredCount % 15 === 0) {
+    const role = chooseCheckpointMascot(correct);
+    if (correct) {
+      setTimeout(() => playMascotMoment(role, () => doGo(1)), 700);
+    } else {
+      pendingMascot = role;
+    }
+  } else if (correct) {
+    scheduleAutoNext(true);
   }
 }
 function triggerCorrectFeedback() {
@@ -316,17 +343,23 @@ function handlePrimaryClick() {
   const rec = recordFor(q.id);
   if (q.type === "choice") { if (rec.revealed) go(1); return; }
   if (q.type === "fill") {
-    if (rec.revealed) { go(1); return; }
     const input = els.fillInput.value.trim(); if (!input) return;
+    // 如果已答过且输入没变，跳下一题
+    if (rec.revealed && input === (rec.input || "")) { go(1); return; }
+    // 重新提交或首次提交
     rec.input = input; rec.correct = isFillCorrect(input, q.answer);
     rec.revealed = true; rec.answerDismissed = false; rec.attempts = (rec.attempts||0)+1; rec.lastAt = Date.now();
     updateStreak(rec.correct); recordAnswer(rec.correct);
     if (rec.correct) triggerCorrectFeedback(); else triggerWrongFeedback();
     shakeIcon();
     render();
-    const role = chooseCheckpointMascot(rec.correct);
-    if (rec.correct) { setTimeout(() => playMascotMoment(role, () => doGo(1)), 700); }
-    else { playMascotMoment(role, () => doGo(1)); }
+    if (answeredCount % 15 === 0) {
+      const role = chooseCheckpointMascot(rec.correct);
+      if (rec.correct) { setTimeout(() => playMascotMoment(role, () => doGo(1)), 700); }
+      else { pendingMascot = role; }
+    } else {
+      if (rec.correct) scheduleAutoNext(true);
+    }
     return;
   }
   if (rec.revealed) { go(1); return; }
