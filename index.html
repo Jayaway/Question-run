@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="supported-color-schemes" content="light">
+  <meta name="theme-color" content="#7B61FF">
+  <title>算法设计与分析刷题</title>
+  <link rel="stylesheet" href="./styles.css?v=20260527d">
+</head>
+<body>
+  <button id="mobileMenuBtn" class="mobile-menu-btn" type="button" aria-label="打开菜单" aria-controls="mobileDrawer" aria-expanded="false">
+    <span></span>
+    <span></span>
+    <span></span>
+  </button>
+  <div id="drawerOverlay" class="drawer-overlay" hidden></div>
+  <div class="app-shell">
+    <aside id="mobileDrawer" class="sidebar">
+      <div class="brand">
+        <div>
+          <h1>算法设计与分析</h1>
+          <p>复习练习刷题</p>
+        </div>
+      </div>
+
+      <nav class="mode-tabs" aria-label="学习模式">
+        <button class="mode-tab main-menu active" data-mode="practice">刷题模式</button>
+        <div class="sub-menu" aria-label="二级页面">
+          <button class="mode-tab" data-mode="memorize">背题</button>
+          <button class="mode-tab" data-status="wrong">错题</button>
+          <button class="mode-tab" data-status="marked">收藏</button>
+        </div>
+      </nav>
+
+      <section class="stats" aria-label="学习统计">
+        <div>
+          <span id="statTotal">0</span>
+          <small>题目</small>
+        </div>
+        <div>
+          <span id="statDone">0</span>
+          <small>已刷</small>
+        </div>
+        <div>
+          <span id="statAccuracy">0%</span>
+          <small>正确率</small>
+        </div>
+        <div>
+          <span id="statMarked">0</span>
+          <small>收藏</small>
+        </div>
+      </section>
+
+      <button id="restartBtn" class="restart-btn" type="button">重新刷题</button>
+
+      <section class="study-tools" aria-label="题库工具">
+        <div class="tool-title">
+          <strong>题库工具</strong>
+          <span>JSON 导入</span>
+        </div>
+        <div class="tool-grid">
+          <label class="import-btn primary" for="importFile">导入新题</label>
+          <button id="restoreBankBtn" type="button">恢复内置题库</button>
+        </div>
+        <input id="importFile" type="file" accept="application/json,.json" hidden>
+        <small id="importHint">支持 豆包生成的 JSON 题库文件</small>
+      </section>
+
+      <details class="collapse-section">
+        <summary class="collapse-toggle">筛选与题号 <button id="shuffleBtn" type="button" class="shuffle-inline">随机</button></summary>
+        <div class="filters">
+          <div class="custom-select-wrap">
+            <span class="filter-label">题型</span>
+            <div id="sectionDropdown" class="custom-dropdown">
+              <button class="dropdown-toggle" type="button" id="sectionToggle">全部题型</button>
+              <div class="dropdown-menu" id="sectionMenu"></div>
+            </div>
+          </div>
+          <div class="custom-select-wrap">
+            <span class="filter-label">范围</span>
+            <div id="statusDropdown" class="custom-dropdown">
+              <button class="dropdown-toggle" type="button" id="statusToggle">全部题目</button>
+              <div class="dropdown-menu" id="statusMenu">
+                <button class="dropdown-item active" data-value="all">全部题目</button>
+                <button class="dropdown-item" data-value="unanswered">未刷题</button>
+                <button class="dropdown-item" data-value="done">已刷题</button>
+                <button class="dropdown-item" data-value="wrong">错题本</button>
+                <button class="dropdown-item" data-value="marked">已收藏</button>
+              </div>
+            </div>
+          </div>
+          <label>
+            <span class="filter-label">搜索</span>
+            <input id="searchInput" type="search" placeholder="题干 / 答案 / 解析">
+          </label>
+        </div>
+        <div id="questionNav" class="question-nav" aria-label="题目列表"></div>
+      </details>
+    </aside>
+
+    <main class="main">
+      <header class="lesson-header">
+        <p id="sourceText" class="lesson-source">本地题库</p>
+        <div class="lesson-progress">
+          <div id="progressSegments" class="progress-segments" aria-label="学习进度"></div>
+          <div class="streak" id="streakArea" title="刷题进度">
+            <img class="streak-icon" id="streakIcon" src="./assets/fire-icon.webp" alt="🔥" />
+            <span id="streakCount">嗯…</span>
+          </div>
+        </div>
+        <p id="pageTitle" class="lesson-title">刷题模式</p>
+      </header>
+
+      <section class="question-card" aria-live="polite">
+        <div class="question-meta">
+          <div class="meta-left">
+            <span id="typeBadge" class="badge">选择题</span>
+            <span id="progressText" class="progress-text">1 / 1</span>
+          </div>
+          <button id="markBtn" class="mark-btn" type="button" aria-pressed="false" title="收藏此题">
+            <span id="markIcon">☆</span>
+            <span class="mark-text">收藏</span>
+          </button>
+        </div>
+
+        <h3 id="questionTitle" class="question-title"></h3>
+        <pre id="questionPrompt" class="prompt"></pre>
+        <img id="questionImage" class="question-image" alt="题目配图">
+
+        <div id="choiceArea" class="choice-area"></div>
+
+        <div id="fillArea" class="fill-area">
+          <label for="fillInput">你的答案</label>
+          <input id="fillInput" type="text" autocomplete="off" placeholder="可按空格或分号分隔多个空">
+        </div>
+
+        <div id="subjectiveArea" class="subjective-area">
+          <label for="memoryInput">默写区</label>
+          <textarea id="memoryInput" rows="5" placeholder="先自己写一遍，再对照参考答案"></textarea>
+        </div>
+      </section>
+
+      <footer id="actionBar" class="action-bar">
+        <div id="feedbackPanel" class="feedback-panel" data-state="hidden" aria-live="polite">
+          <div class="feedback-head">
+            <span class="feedback-icon" id="feedbackIcon">✓</span>
+            <strong id="feedbackTitle">回答正确</strong>
+          </div>
+          <div class="feedback-body">
+            <div class="feedback-block">
+              <span class="feedback-label">📖 参考答案</span>
+              <p id="feedbackAnswer"></p>
+            </div>
+            <div class="feedback-block" id="feedbackAnalysisBlock">
+              <span class="feedback-label">解析</span>
+              <p id="feedbackAnalysis"></p>
+            </div>
+          </div>
+        </div>
+        <div class="action-row">
+          <button id="prevBtn" class="nav-btn" type="button" aria-label="上一题">‹</button>
+          <button id="primaryBtn" class="primary-btn" type="button" data-state="check">检查答案</button>
+          <button id="nextBtn" class="nav-btn" type="button" aria-label="下一题">›</button>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <div id="mascotOverlay" class="mascot-overlay">
+    <div class="mascot-stage">
+      <img id="mascotImg" class="mascot-img" src="" alt="" />
+      <div id="mascotBubble" class="mascot-bubble"></div>
+      <div class="mascot-particles" id="mascotParticles"></div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+  <script src="./data.js?v=20260527d"></script>
+  <script src="./app.js?v=20260527d"></script>
+</body>
+</html>
