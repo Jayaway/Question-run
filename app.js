@@ -663,3 +663,67 @@ initFilters(); bindEvents(); render();
 // 预加载所有角色图片
 Object.values(MASCOT_CONFIG).forEach(c => { const i = new Image(); i.src = c.image; });
 
+/* ===== RIGHT PANEL UPDATE ===== */
+function updateRightPanel() {
+  const rpDone = document.getElementById("rpDone");
+  const rpAccuracy = document.getElementById("rpAccuracy");
+  const rpStreak = document.getElementById("rpStreak");
+  const rpMarked = document.getElementById("rpMarked");
+  const rpEnergyFill = document.getElementById("rpEnergyFill");
+  const rpEnergyLeft = document.getElementById("rpEnergyLeft");
+  const rpMascotImg = document.getElementById("rpMascotImg");
+  const rpMascotLine = document.getElementById("rpMascotLine");
+  const rpTipsList = document.getElementById("rpTipsList");
+  if (!rpDone) return; // right panel not in DOM (mobile)
+
+  // Stats
+  const done = questions.filter(q => { const r = app.records[q.id]; return r && (r.revealed || r.correct !== null); }).length;
+  const checked = Object.values(app.records).filter(r => r.correct !== null);
+  const correct = checked.filter(r => r.correct === true).length;
+  const accuracy = checked.length ? Math.round((correct / checked.length) * 100) : 0;
+  rpDone.textContent = done;
+  rpAccuracy.textContent = accuracy + "%";
+  rpStreak.textContent = app.streak || 0;
+  rpMarked.textContent = Object.keys(app.marked).length;
+
+  // Energy (progress toward next 15-question checkpoint)
+  const progress = answeredCount % 15;
+  const left = 15 - progress;
+  rpEnergyFill.style.width = Math.round((progress / 15) * 100) + "%";
+  rpEnergyLeft.textContent = left;
+
+  // Mascot (based on recent performance)
+  const total = last15Results.length;
+  const recentCorrect = last15Results.filter(r => r.correct).length;
+  const recentAcc = total > 0 ? recentCorrect / total : 0.5;
+  let mascotRole = "boobo";
+  let mascotLine = "准备好了吗？开始刷题吧。";
+  if (total >= 3) {
+    if (recentAcc >= 0.85) { mascotRole = "gru"; mascotLine = MASCOT_CONFIG.gru.lines[Math.floor(Math.random() * MASCOT_CONFIG.gru.lines.length)]; }
+    else if (recentAcc >= 0.6) { mascotRole = "boobo"; mascotLine = MASCOT_CONFIG.boobo.lines[Math.floor(Math.random() * MASCOT_CONFIG.boobo.lines.length)]; }
+    else { mascotRole = "mimo"; mascotLine = MASCOT_CONFIG.mimo.lines[Math.floor(Math.random() * MASCOT_CONFIG.mimo.lines.length)]; }
+  }
+  rpMascotImg.src = MASCOT_CONFIG[mascotRole].image;
+  rpMascotLine.textContent = '"' + mascotLine + '"';
+
+  // Tips (find most common wrong sections)
+  const wrongSections = {};
+  questions.forEach(q => {
+    const r = app.records[q.id];
+    if (r && (r.firstWrong || r.correct === false)) {
+      const keyword = q.section || "其他";
+      wrongSections[keyword] = (wrongSections[keyword] || 0) + 1;
+    }
+  });
+  const sorted = Object.entries(wrongSections).sort((a, b) => b[1] - a[1]).slice(0, 3);
+  if (sorted.length) {
+    rpTipsList.innerHTML = sorted.map(([k, v]) => `<li>${k}（${v}题）</li>`).join("");
+  } else {
+    rpTipsList.innerHTML = "<li>暂无错题，继续保持</li>";
+  }
+}
+
+// Hook into render
+const _origRender = render;
+render = function() { _origRender(); updateRightPanel(); };
+
