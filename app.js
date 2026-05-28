@@ -94,7 +94,14 @@ const els = {
 };
 
 function loadQuestionBank() {
-  try { const s = localStorage.getItem(BANK_STORAGE_KEY); if (!s) return normalizeQuestionBank(DEFAULT_BANK, "内置题库"); return normalizeQuestionBank(JSON.parse(s), "导入题库"); }
+  try {
+    const s = localStorage.getItem(BANK_STORAGE_KEY);
+    if (!s) return normalizeQuestionBank(DEFAULT_BANK, "内置题库");
+    const parsed = normalizeQuestionBank(JSON.parse(s), "导入题库");
+    // 如果缓存题库为空，回退到内置题库
+    if (!parsed.questions.length) { localStorage.removeItem(BANK_STORAGE_KEY); return normalizeQuestionBank(DEFAULT_BANK, "内置题库"); }
+    return parsed;
+  }
   catch { localStorage.removeItem(BANK_STORAGE_KEY); return normalizeQuestionBank(DEFAULT_BANK, "内置题库"); }
 }
 function normalizeQuestionBank(input, fallbackTitle = "导入题库") {
@@ -122,10 +129,17 @@ function importQuestionBank(input) {
   initFilters(); render(); closeDrawerOnMobile(); if (els.importHint) els.importHint.textContent = `已导入 ${questions.length} 题`; return nb;
 }
 function restoreDefaultBank() {
-  if (!confirm("确认恢复内置题库？")) return; localStorage.removeItem(BANK_STORAGE_KEY);
-  bank = normalizeQuestionBank(DEFAULT_BANK, "内置题库"); questions = bank.questions || [];
-  app = { ...app, section: "全部题型", status: "all", query: "", index: 0, records: {}, marked: {}, streak: 0 };
-  initFilters(); render(); closeDrawerOnMobile(); if (els.importHint) els.importHint.textContent = "已恢复内置题库";
+  showModal({
+    type: "danger", icon: "⚠️", title: "恢复内置题库",
+    body: "这将清除当前已导入的题库，恢复为内置题库，所有刷题记录将被重置。是否继续？",
+    confirmText: "确认恢复", cancelText: "取消",
+    onConfirm: () => {
+      localStorage.removeItem(BANK_STORAGE_KEY);
+      bank = normalizeQuestionBank(DEFAULT_BANK, "内置题库"); questions = bank.questions || [];
+      app = { ...app, section: "全部题型", status: "all", query: "", index: 0, records: {}, marked: {}, streak: 0 };
+      initFilters(); render(); closeDrawerOnMobile(); if (els.importHint) els.importHint.textContent = "已恢复内置题库";
+    }
+  });
 }
 window.importQuestionBank = importQuestionBank;
 
@@ -427,6 +441,30 @@ function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法�
 function escapeHtml(t) { return String(t||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
 function escapeAttr(t) { return escapeHtml(t).replaceAll("\n"," "); }
 
+function showModal({ type="info", icon="", title="", body="", confirmText="确认", cancelText="取消", onConfirm=null, onOk=null }) {
+  const overlay = document.createElement("div");
+  overlay.className = "custom-modal-overlay";
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+  let iconHtml = "";
+  if (icon) iconHtml = `<div class="custom-modal-icon ${type}">${icon}</div>`;
+  let actionsHtml = "";
+  if (onOk) {
+    actionsHtml = `<div class="custom-modal-actions"><button class="btn-ok" type="button">${escapeHtml(confirmText)}</button></div>`;
+  } else {
+    actionsHtml = `<div class="custom-modal-actions"><button class="btn-cancel" type="button">${escapeHtml(cancelText)}</button><button class="btn-confirm" type="button">${escapeHtml(confirmText)}</button></div>`;
+  }
+  overlay.innerHTML = `<div class="custom-modal">${iconHtml}<div class="custom-modal-title">${title}</div><div class="custom-modal-body">${body}</div>${actionsHtml}</div>`;
+  document.body.appendChild(overlay);
+  const close = () => overlay.remove();
+  if (onOk) {
+    overlay.querySelector(".btn-ok").addEventListener("click", () => { onOk(); close(); });
+  } else {
+    overlay.querySelector(".btn-cancel").addEventListener("click", close);
+    overlay.querySelector(".btn-confirm").addEventListener("click", () => { if (onConfirm) onConfirm(); close(); });
+  }
+  return close;
+}
+
 function bindSwipeNavigation() {
   els.questionCard.addEventListener("touchstart", e => { if (!isMobileViewport()||e.touches.length!==1) return; swipeStart = {x:e.touches[0].clientX, y:e.touches[0].clientY, at:Date.now()}; }, {passive:true});
   els.questionCard.addEventListener("touchend", e => { if (!swipeStart||!isMobileViewport()) return; const t=e.changedTouches[0], dx=t.clientX-swipeStart.x, dy=t.clientY-swipeStart.y, el=Date.now()-swipeStart.at; swipeStart=null; if (el>700||Math.abs(dx)<70||Math.abs(dy)>55) return; go(dx<0?1:-1); }, {passive:true});
@@ -467,11 +505,27 @@ function bindEvents() {
   els.nextBtn.addEventListener("click", () => go(1));
   els.markBtn.addEventListener("click", toggleMark);
   els.shuffleBtn.addEventListener("click", shuffle);
-  if (els.resetBtn) els.resetBtn.addEventListener("click", resetRecords);
-  els.restartBtn.addEventListener("click", resetRecords);
+  if (els.resetBtn) els.resetBtn.addEventListener("click", () => {
+    showModal({
+      type: "danger", icon: "⚠️", title: "重新刷题",
+      body: "这将清除所有刷题记录和收藏，恢复初始状态，确定要重新开始吗？",
+      confirmText: "确认重置", cancelText: "取消",
+      onConfirm: resetRecords
+    });
+  });
+  els.restartBtn.addEventListener("click", () => {
+    showModal({
+      type: "danger", icon: "⚠️", title: "重新刷题",
+      body: "这将清除所有刷题记录和收藏，恢复初始状态，确定要重新开始吗？",
+      confirmText: "确认重置", cancelText: "取消",
+      onConfirm: resetRecords
+    });
+  });
   els.importFile.addEventListener("change", async () => {
     const f = els.importFile.files && els.importFile.files[0]; if (!f) return;
-    try { importQuestionBank(JSON.parse(await f.text())); } catch(e) { alert(`导入失败：${e.message}`); }
+    try { importQuestionBank(JSON.parse(await f.text())); } catch(e) {
+      showModal({ type: "danger", icon: "❌", title: "导入失败", body: e.message, confirmText: "知道了", onOk: () => {} });
+    }
     finally { els.importFile.value = ""; }
   });
   els.restoreBankBtn.addEventListener("click", restoreDefaultBank);
