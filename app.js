@@ -57,6 +57,7 @@ const els = {
   importHint: document.querySelector("#importHint"),
   mobileMenuBtn: document.querySelector("#mobileMenuBtn"),
   drawerOverlay: document.querySelector("#drawerOverlay"),
+  themeToggle: document.querySelector("#themeToggle"),
   questionNav: document.querySelector("#questionNav"),
   pageTitle: document.querySelector("#pageTitle"),
   sourceText: document.querySelector("#sourceText"),
@@ -201,7 +202,7 @@ function render() {
 }
 const MOOD_WORDS = ["嗯…","还行","不错","可以","挺好","很强","牛啊","太强了","起飞!","无敌!","封神!"];
 function getMoodWord(count) {
-  const idx = Math.min(Math.floor(count / 15), MOOD_WORDS.length - 1);
+  const idx = Math.min(Math.floor(count / 10), MOOD_WORDS.length - 1);
   return MOOD_WORDS[idx];
 }
 function renderStats() {
@@ -324,7 +325,7 @@ function pickOption(key) {
   shakeIcon();
   render();
   // 只在首次答题时触发15题节点动画
-  if (isFirstAnswer && answeredCount % 15 === 0) {
+  if (isFirstAnswer && answeredCount % 10 === 0) {
     const role = chooseCheckpointMascot(correct);
     if (correct) {
       setTimeout(() => playMascotMoment(role, () => doGo(1)), 700);
@@ -367,7 +368,7 @@ function handlePrimaryClick() {
     if (rec.correct) triggerCorrectFeedback(); else triggerWrongFeedback();
     shakeIcon();
     render();
-    if (answeredCount % 15 === 0) {
+    if (answeredCount % 10 === 0) {
       const role = chooseCheckpointMascot(rec.correct);
       if (rec.correct) { setTimeout(() => playMascotMoment(role, () => doGo(1)), 700); }
       else { pendingMascot = role; }
@@ -436,6 +437,23 @@ function normalize(t) { return String(t||"").toLowerCase().replace(/\s+/g,"").re
 function setDrawer(open) { document.body.classList.toggle("drawer-open", open); els.mobileMenuBtn.setAttribute("aria-expanded", String(open)); els.drawerOverlay.hidden = !open; }
 function toggleDrawer() { setDrawer(!document.body.classList.contains("drawer-open")); }
 function closeDrawerOnMobile() { setDrawer(false); }
+function initTheme() {
+  const saved = localStorage.getItem("quiz-dark-mode");
+  if (saved === "1") { document.body.classList.add("dark"); updateThemeIcon(true); }
+}
+function updateThemeIcon(isDark) {
+  const btn = els.themeToggle;
+  if (!btn) return;
+  const img = btn.querySelector("img");
+  if (img) img.src = isDark ? "./assets/moon.png" : "./assets/sun2.png";
+}
+function toggleTheme() {
+  const on = document.body.classList.toggle("dark");
+  localStorage.setItem("quiz-dark-mode", on ? "1" : "0");
+  updateThemeIcon(on);
+  const meta = document.querySelector("#themeColorMeta");
+  if (meta) meta.content = on ? "#2a2255" : "#7B61FF";
+}
 function resetRecords() { app.records = {}; app.marked = {}; app.streak = 0; app.index = 0; answeredCount = 0; last15Results = []; render(); }
 function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法填空":"算","问答题":"问","算法设计与分析题":"设"}[q.section]||"题"; return `${p}${q.number}`; }
 function escapeHtml(t) { return String(t||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
@@ -531,6 +549,7 @@ function bindEvents() {
   els.restoreBankBtn.addEventListener("click", restoreDefaultBank);
   els.mobileMenuBtn.addEventListener("click", toggleDrawer);
   els.drawerOverlay.addEventListener("click", () => setDrawer(false));
+  els.themeToggle.addEventListener("click", toggleTheme);
   els.fillInput.addEventListener("input", () => { const q = currentQuestion(); if (!q||q.type!=="fill"||recordFor(q.id).revealed) return; els.primaryBtn.disabled = !els.fillInput.value.trim(); });
   els.fillInput.addEventListener("keydown", e => { if (e.key === "Enter") handlePrimaryClick(); });
   els.memoryInput.addEventListener("input", () => { const q = currentQuestion(); if (q) { recordFor(q.id).draft = els.memoryInput.value; saveState(); } });
@@ -543,7 +562,7 @@ function bindEvents() {
   bindSwipeNavigation();
 }
 
-/* ===== 15-QUESTION MASCOT CHECKPOINT ===== */
+/* ===== 10-QUESTION MASCOT CHECKPOINT ===== */
 
 /* ===== UNIFIED MASCOT SYSTEM ===== */
 let answeredCount = 0;
@@ -552,11 +571,11 @@ let last15Results = [];
 let mascotTimeline = null;
 
 const MASCOT_CONFIG = {
-  gru: { image: "./assets/gru-front.webp", duration: 2300, particle: "celebrate", lines: ["这一组收得很漂亮，继续保持！","咕噜检测到：你刚刚状态很好！","这 15 题刷得很顺，下一组继续冲！","漂亮！你已经进入节奏了！","这一波很稳，继续保持手感！"] },
-  boobo: { image: "./assets/boobo-front.webp", duration: 2300, particle: "blueDots", lines: ["啵！这一组完成啦，下一组慢慢变强。","刚刚有几题挺关键，继续保持节奏。","啵啵觉得，你正在越来越稳。","这 15 题过关，下一组继续观察！","有几题可以回头看看，但整体不错。","啵？状态好像慢慢起来了。"] },
-  mimo: { image: "./assets/mimo-front.webp", duration: 2300, particle: "softDots", lines: ["没关系，这题先记住，下一组慢慢来。","错在这里不是坏事，说明重点被找到了。","先别急着否定自己，下一组我们稳一点。","这一题有点绕，绵绵陪你翻过去。","这题先收进错题里，之后会变成你的分数。","刚刚那题不简单，先放下，下一组重新开始。"] },
-  waiwai: { image: "./assets/waiwai-front.webp", duration: 2300, particle: "marks", lines: ["这题有点坏，记住它，下次别让它骗到。","第 15 题还来挖坑，题目真会挑时间。","被它偷袭了一下，不丢人。","这题先记仇，下一组再打回来。","刚刚那题不太老实，歪歪已经盯上它了。","别看我，我也觉得它阴险。"] },
-  dodo: { image: "./assets/dodo-front.webp", duration: 2400, particle: "yellowBubbles", lines: ["15 题完成啦，豆豆建议你眨眨眼。","脑子已经热起来了，下一组慢慢来。","这一组结束，豆豆给你盖个小章。","可以继续，也可以先喘一口气。","刷了这么久，喝口水不算偷懒。","豆豆觉得你已经很努力了，下一组别急。"] }
+  gru: { image: "./assets/gru-front.webp", darkImage: "./assets/gru-dark.webp", duration: 2300, particle: "celebrate", lines: ["哼，这组勉强及格，咕噜勉强认可你。","就这？咕噜三岁就能全对了。","还行吧，没让咕噜太失望。","你这水平……咕噜决定再观察一组。","及格线飘过，要不要给你颁个安慰奖？"] },
+  boobo: { image: "./assets/boobo-front.webp", darkImage: "./assets/boobo-dark.webp", duration: 2300, particle: "blueDots", lines: ["啵…勉强过关，别得意。","这一组啵啵本来以为你会错更多。","啧，对了这么多，偷偷翻答案了吧？","还行，啵啵暂时不吐槽你。","这正确率…啵啵选择沉默。","啵，你变强了？不，可能是题太简单。"] },
+  mimo: { image: "./assets/mimo-front.webp", darkImage: "./assets/mimo-dark.webp", duration: 2300, particle: "softDots", lines: ["又错了？绵绵一点都不意外呢。","这题都能错，绵绵替你脸红。","错题本又要加厚了，开心吗？","绵绵早就料到你会栽在这里。","不着急否定自己？晚了，绵绵先否定你。","这道题难？不，是你太菜。"] },
+  waiwai: { image: "./assets/waiwai-front.webp", darkImage: "./assets/waiwai-dark.webp", duration: 2300, particle: "marks", lines: ["这题坑的就是你，果然踩了。","歪歪预言：下题你还得错。","被阴了一道，舒服吗？","歪歪早就看穿了，就你没看穿。","这题不怪你，怪你脑子不好使。","记仇？歪歪替你记着呢，厚厚一本。"] },
+  dodo: { image: "./assets/dodo-front.webp", darkImage: "./assets/dodo-dark.webp", duration: 2400, particle: "yellowBubbles", lines: ["累了？豆豆觉得你早就该累了。","休息吧，反正刷再多也就这样。","豆豆建议你关机睡觉，为你好，也为题目好。","这组结束，豆豆给你盖个「仍需努力」章。","脑子热了？正常，本来就容易过热。","喝口水吧，顺便冷静一下膨胀的自信。"] }
 };
 
 const MASCOT_ANIM = {
@@ -583,9 +602,10 @@ function playMascotMoment(role, onComplete) {
 
   bubble.textContent = config.lines[Math.floor(Math.random() * config.lines.length)];
 
+  const darkImg = config.darkImage || config.image;
   const preload = new Image();
   preload.onload = function () {
-    img.src = config.image;
+    img.src = document.body.classList.contains("dark") ? darkImg : config.image;
     // Make overlay visible
     overlay.style.display = "flex";
     overlay.style.opacity = 0;
@@ -645,7 +665,7 @@ function playMascotMoment(role, onComplete) {
   preload.onerror = function () {
     if (onComplete) onComplete();
   };
-  preload.src = config.image;
+  preload.src = document.body.classList.contains("dark") ? (config.darkImage || config.image) : config.image;
 }
 
 function createMascotParticle(type) {
@@ -712,10 +732,13 @@ function chooseCheckpointMascot(isCorrect) {
 /* ===== OPTION RIPPLE EFFECT ===== */
 function addOptionRipple(btn) { btn.style.setProperty("--cx","50%"); btn.style.setProperty("--cy","50%"); btn.classList.add("ripple"); setTimeout(()=>btn.classList.remove("ripple"), 400); }
 
-initFilters(); bindEvents(); render();
+initTheme(); initFilters(); bindEvents(); render();
 
 // 预加载所有角色图片
-Object.values(MASCOT_CONFIG).forEach(c => { const i = new Image(); i.src = c.image; });
+Object.values(MASCOT_CONFIG).forEach(c => {
+  const i1 = new Image(); i1.src = c.image;
+  if (c.darkImage) { const i2 = new Image(); i2.src = c.darkImage; }
+});
 
 /* ===== RIGHT PANEL UPDATE ===== */
 function updateRightPanel() {
@@ -757,7 +780,9 @@ function updateRightPanel() {
     else if (recentAcc >= 0.6) { mascotRole = "boobo"; mascotLine = MASCOT_CONFIG.boobo.lines[Math.floor(Math.random() * MASCOT_CONFIG.boobo.lines.length)]; }
     else { mascotRole = "mimo"; mascotLine = MASCOT_CONFIG.mimo.lines[Math.floor(Math.random() * MASCOT_CONFIG.mimo.lines.length)]; }
   }
-  rpMascotImg.src = MASCOT_CONFIG[mascotRole].image;
+  rpMascotImg.src = document.body.classList.contains("dark")
+    ? (MASCOT_CONFIG[mascotRole].darkImage || MASCOT_CONFIG[mascotRole].image)
+    : MASCOT_CONFIG[mascotRole].image;
   rpMascotLine.textContent = '"' + mascotLine + '"';
 
   // Tips (find most common wrong sections)
