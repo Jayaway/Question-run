@@ -13,7 +13,7 @@
   <link rel="icon" type="image/png" sizes="128x128" href="./assets/favicon-128x128.png">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
   <title>算法设计与分析刷题</title>
-  <link rel="stylesheet" href="./styles.css?v=20260529c">
+  <link rel="stylesheet" href="./styles.css?v=20260531a">
 </head>
 <body>
   <button id="mobileMenuBtn" class="mobile-menu-btn" type="button" aria-label="打开菜单" aria-controls="mobileDrawer" aria-expanded="false">
@@ -108,70 +108,72 @@
     </aside>
 
     <main class="main">
-      <header class="lesson-header">
-        <p id="sourceText" class="lesson-source">本地题库</p>
-        <div class="lesson-progress">
-          <div id="progressSegments" class="progress-segments" aria-label="学习进度"></div>
-          <div class="streak" id="streakArea" title="刷题进度">
-            <img class="streak-icon" id="streakIcon" src="./assets/fire-icon.webp" alt="🔥" />
-            <span id="streakCount">嗯…</span>
+      <section id="practiceView">
+        <header class="lesson-header">
+          <p id="sourceText" class="lesson-source">本地题库</p>
+          <div class="lesson-progress">
+            <div id="progressSegments" class="progress-segments" aria-label="学习进度"></div>
+            <div class="streak" id="streakArea" title="刷题进度">
+              <img class="streak-icon" id="streakIcon" src="./assets/fire-icon.webp" alt="🔥" />
+              <span id="streakCount">嗯…</span>
+            </div>
           </div>
-        </div>
-        <p id="pageTitle" class="lesson-title">刷题模式</p>
-      </header>
+          <p id="pageTitle" class="lesson-title">刷题模式</p>
+        </header>
 
-      <section class="question-card" aria-live="polite">
-        <div class="question-meta">
-          <div class="meta-left">
-            <span id="typeBadge" class="badge">选择题</span>
-            <span id="progressText" class="progress-text">1 / 1</span>
+        <section class="question-card" aria-live="polite">
+          <div class="question-meta">
+            <div class="meta-left">
+              <span id="typeBadge" class="badge">选择题</span>
+              <span id="progressText" class="progress-text">1 / 1</span>
+            </div>
+            <button id="markBtn" class="mark-btn" type="button" aria-pressed="false" title="收藏此题">
+              <span id="markIcon">☆</span>
+              <span class="mark-text">收藏</span>
+            </button>
           </div>
-          <button id="markBtn" class="mark-btn" type="button" aria-pressed="false" title="收藏此题">
-            <span id="markIcon">☆</span>
-            <span class="mark-text">收藏</span>
-          </button>
-        </div>
 
-        <h3 id="questionTitle" class="question-title"></h3>
-        <pre id="questionPrompt" class="prompt"></pre>
-        <img id="questionImage" class="question-image" alt="题目配图">
+          <h3 id="questionTitle" class="question-title"></h3>
+          <pre id="questionPrompt" class="prompt"></pre>
+          <img id="questionImage" class="question-image" alt="题目配图">
 
-        <div id="choiceArea" class="choice-area"></div>
+          <div id="choiceArea" class="choice-area"></div>
 
-        <div id="fillArea" class="fill-area">
-          <label for="fillInput">你的答案</label>
-          <input id="fillInput" type="text" autocomplete="off" placeholder="可按空格或分号分隔多个空">
-        </div>
+          <div id="fillArea" class="fill-area">
+            <label for="fillInput">你的答案</label>
+            <input id="fillInput" type="text" autocomplete="off" placeholder="可按空格或分号分隔多个空">
+          </div>
 
-        <div id="subjectiveArea" class="subjective-area">
-          <label for="memoryInput">默写区</label>
-          <textarea id="memoryInput" rows="5" placeholder="先自己写一遍，再对照参考答案"></textarea>
-        </div>
+          <div id="subjectiveArea" class="subjective-area">
+            <label for="memoryInput">默写区</label>
+            <textarea id="memoryInput" rows="5" placeholder="先自己写一遍，再对照参考答案"></textarea>
+          </div>
+        </section>
+
+        <footer id="actionBar" class="action-bar">
+          <div id="feedbackPanel" class="feedback-panel" data-state="hidden" aria-live="polite">
+            <div class="feedback-head">
+              <span class="feedback-icon" id="feedbackIcon">✓</span>
+              <strong id="feedbackTitle">回答正确</strong>
+            </div>
+            <div class="feedback-body">
+              <div class="feedback-block">
+                <span class="feedback-label">参考答案</span>
+                <p id="feedbackAnswer"></p>
+              </div>
+              <div class="feedback-block" id="feedbackAnalysisBlock">
+                <span class="feedback-label">解析</span>
+                <p id="feedbackAnalysis"></p>
+              </div>
+            </div>
+          </div>
+          <div class="action-row">
+            <button id="prevBtn" class="nav-btn" type="button" aria-label="上一题">‹</button>
+            <button id="primaryBtn" class="primary-btn" type="button" data-state="check">检查答案</button>
+            <button id="nextBtn" class="nav-btn" type="button" aria-label="下一题">›</button>
+          </div>
+        </footer>
       </section>
-
-      <footer id="actionBar" class="action-bar">
-        <div id="feedbackPanel" class="feedback-panel" data-state="hidden" aria-live="polite">
-          <div class="feedback-head">
-            <span class="feedback-icon" id="feedbackIcon">✓</span>
-            <strong id="feedbackTitle">回答正确</strong>
-          </div>
-          <div class="feedback-body">
-            <div class="feedback-block">
-              <span class="feedback-label">参考答案</span>
-              <p id="feedbackAnswer"></p>
-            </div>
-            <div class="feedback-block" id="feedbackAnalysisBlock">
-              <span class="feedback-label">解析</span>
-              <p id="feedbackAnalysis"></p>
-            </div>
-          </div>
-        </div>
-        <div class="action-row">
-          <button id="prevBtn" class="nav-btn" type="button" aria-label="上一题">‹</button>
-          <button id="primaryBtn" class="primary-btn" type="button" data-state="check">检查答案</button>
-          <button id="nextBtn" class="nav-btn" type="button" aria-label="下一题">›</button>
-        </div>
-      </footer>
     </main>
 
     <aside class="right-panel">
@@ -220,6 +222,20 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="./data.js?v=20260529a"></script>
-  <script src="./app.js?v=20260530b"></script>
+  <script src="./app.js?v=20260531a"></script>
+  <script>
+(function() {
+  var fp = localStorage.getItem("_visitor_fp");
+  if (!fp) { fp = "fp-" + Date.now() + "-" + Math.random().toString(36).slice(2, 10); localStorage.setItem("_visitor_fp", fp); }
+  var page = location.pathname === "/" || location.pathname === "/index.html" ? "首页" : location.pathname.replace("/", "") || "首页";
+  try {
+    fetch("/api/track", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ fp: fp, page: page })
+    });
+  } catch(e) {}
+})();
+</script>
 </body>
 </html>

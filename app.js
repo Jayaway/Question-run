@@ -4,7 +4,6 @@ const BANK_STORAGE_KEY = "algorithm-review-quiz-bank-v1";
 let bank = loadQuestionBank();
 let questions = bank.questions || [];
 
-/* ===== Sound Effects (Web Audio API) ===== */
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 function getAudioCtx() { if (!audioCtx) audioCtx = new AudioCtx(); return audioCtx; }
@@ -87,7 +86,6 @@ const els = {
   markBtn: document.querySelector("#markBtn"),
   markIcon: document.querySelector("#markIcon"),
   shuffleBtn: document.querySelector("#shuffleBtn"),
-  resetBtn: document.querySelector("#resetBtn"),
   statTotal: document.querySelector("#statTotal"),
   statDone: document.querySelector("#statDone"),
   statAccuracy: document.querySelector("#statAccuracy"),
@@ -99,7 +97,6 @@ function loadQuestionBank() {
     const s = localStorage.getItem(BANK_STORAGE_KEY);
     if (!s) return normalizeQuestionBank(DEFAULT_BANK, "内置题库");
     const parsed = normalizeQuestionBank(JSON.parse(s), "导入题库");
-    // 如果缓存题库为空，回退到内置题库
     if (!parsed.questions.length) { localStorage.removeItem(BANK_STORAGE_KEY); return normalizeQuestionBank(DEFAULT_BANK, "内置题库"); }
     return parsed;
   }
@@ -159,7 +156,6 @@ function filteredQuestions() {
     const marked = Boolean(app.marked[q.id]);
     const done = Boolean(rec && (rec.revealed || rec.mastered !== null || rec.correct !== null));
     const wrong = Boolean(rec && (rec.firstWrong === true || rec.correct === false || rec.mastered === false));
-    const correct = Boolean(rec && rec.correct === true);
     if (app.section !== "全部题型" && q.section !== app.section) return false;
 
     if (app.status === "wrong" && !wrong) return false;
@@ -171,12 +167,10 @@ function filteredQuestions() {
   });
 }
 
-/* ===== Custom Dropdown Logic ===== */
 function initFilters() {
   const sections = ["全部题型", ...new Set(questions.map(q => q.section))];
   els.sectionMenu.innerHTML = sections.map(s => `<button class="dropdown-item${s === app.section ? " active" : ""}" data-value="${escapeAttr(s)}">${s}</button>`).join("");
   els.sectionToggle.textContent = app.section;
-  // status dropdown active state
   els.statusMenu.querySelectorAll(".dropdown-item").forEach(btn => btn.classList.toggle("active", btn.dataset.value === app.status));
   const statusLabels = { all: "全部题目", unanswered: "未刷题", done: "已刷题", wrong: "错题本", marked: "已收藏" };
   els.statusToggle.textContent = statusLabels[app.status] || "全部题目";
@@ -246,501 +240,443 @@ function renderQuestion(q, list) {
   els.typeBadge.textContent = q.section; els.progressText.textContent = `${app.index + 1} / ${list.length}`;
   els.questionTitle.textContent = q.title; els.questionPrompt.textContent = q.prompt || q.title;
   els.markBtn.classList.toggle("active", Boolean(app.marked[q.id]));
+  els.markBtn.setAttribute("aria-pressed", String(Boolean(app.marked[q.id])));
   els.markIcon.textContent = app.marked[q.id] ? "★" : "☆";
   els.prevBtn.disabled = app.index === 0; els.nextBtn.disabled = app.index === list.length - 1;
-  if (q.image) { els.questionImage.src = q.image; els.questionImage.style.display = "block"; }
-  else { els.questionImage.removeAttribute("src"); els.questionImage.style.display = "none"; }
-  renderAnswerInput(q, rec, reveal); renderFooter(q, rec, reveal);
-}
-function renderAnswerInput(q, rec, reveal) {
-  els.choiceArea.innerHTML = ""; els.fillArea.style.display = "none"; els.subjectiveArea.style.display = "none";
+  els.primaryBtn.disabled = false;
+  els.primaryBtn.dataset.state = reveal ? "next" : "check";
+  els.primaryBtn.textContent = reveal ? "下一题" : (app.mode === "memorize" ? "显示答案" : "检查答案");
+
+  if (q.image) {
+    els.questionImage.src = q.image;
+    els.questionImage.style.display = "block";
+  } else {
+    els.questionImage.removeAttribute("src");
+    els.questionImage.style.display = "none";
+  }
+
+  els.choiceArea.innerHTML = "";
+  els.fillArea.style.display = "none";
+  els.subjectiveArea.style.display = "none";
+
   if (q.type === "choice") {
-    const committed = rec.revealed;
-    const lockedCorrect = committed && rec.correct; // 已答对就锁定
-    els.choiceArea.innerHTML = (q.options || []).map(o => {
-      const isC = o.key === q.answer, wasC = committed && rec.selected === o.key;
-      const cls = ["option-btn"]; let mark = "";
-      if (committed && isC) { cls.push("correct"); mark = "✓"; }
-      else if (committed && wasC) { cls.push("wrong"); mark = "✗"; }
-      return `<button class="${cls.join(" ")}" data-option="${o.key}" ${lockedCorrect?"disabled":""}><span class="option-key">${o.key}</span><span class="option-label">${escapeHtml(o.text)}</span><span class="option-mark">${mark}</span></button>`;
-    }).join(""); return;
+    els.choiceArea.innerHTML = q.options.map(opt => {
+      let cls = "option-btn";
+      let mark = "";
+      if (reveal) {
+        const selected = rec.selected === opt.key;
+        const isCorrect = normalizeAnswer(opt.key) === normalizeAnswer(q.answer);
+        if (isCorrect) { cls += " correct"; mark = "✓"; }
+        else if (selected) { cls += " wrong"; mark = "✕"; }
+      }
+      return `<button class="${cls}" type="button" data-key="${escapeAttr(opt.key)}" ${reveal ? "disabled" : ""}><span class="option-key">${escapeHtml(opt.key)}</span><span>${escapeHtml(opt.text)}</span><span class="option-mark">${mark}</span></button>`;
+    }).join("");
+  } else if (q.type === "fill" || q.type === "code") {
+    els.fillArea.style.display = "grid";
+    els.fillInput.value = rec.input || "";
+    els.fillInput.disabled = reveal;
+  } else {
+    els.subjectiveArea.style.display = "grid";
+    els.memoryInput.value = rec.input || "";
+    els.memoryInput.disabled = reveal;
   }
-  if (q.type === "fill") { els.fillArea.style.display = "grid"; els.fillInput.value = rec.input != null ? rec.input : ""; els.fillInput.disabled = false; return; }
-  els.subjectiveArea.style.display = "grid"; els.memoryInput.value = rec.draft || "";
-}
-function renderFooter(q, rec, reveal) {
-  const dismissed = rec.answerDismissed;
-  const showFB = reveal && rec.correct !== null && !dismissed;
-  const showSub = reveal && q.type !== "choice" && q.type !== "fill" && !dismissed;
-  const showMem = reveal && app.mode === "memorize" && !dismissed;
-  if (showFB) showFeedbackPanel(rec.correct ? "ok" : "bad", q);
-  else if (showSub || showMem) showFeedbackPanel("ok", q, { neutral: true });
+
+  if (reveal) showFeedback(q, rec.correct !== false);
   else hideFeedback();
-  if (q.type === "choice") { els.primaryBtn.textContent = rec.revealed ? "下一题 →" : "选择答案"; els.primaryBtn.disabled = !rec.revealed; }
-  else if (q.type === "fill") {
-    const inputChanged = rec.revealed && (els.fillInput.value.trim() !== (rec.input || ""));
-    if (rec.revealed && !inputChanged) { els.primaryBtn.textContent = "下一题 →"; els.primaryBtn.disabled = false; }
-    else { els.primaryBtn.textContent = rec.revealed ? "重新提交" : "提交"; els.primaryBtn.disabled = !(els.fillInput.value||"").trim(); }
-  }
-  else { els.primaryBtn.textContent = rec.revealed ? "下一题 →" : "查看答案"; els.primaryBtn.disabled = false; }
 }
-function showFeedbackPanel(kind, q, opts) {
-  els.feedbackPanel.dataset.state = kind;
-  if (opts && opts.neutral) { els.feedbackTitle.textContent = "参考答案与解析"; els.feedbackIcon.textContent = "📖"; }
-  else if (kind === "ok") { els.feedbackTitle.textContent = "答对啦 🎉"; els.feedbackIcon.textContent = "✓"; }
-  else { els.feedbackTitle.textContent = "答案有误"; els.feedbackIcon.textContent = "✗"; }
-  els.feedbackAnswer.textContent = q.answer || "暂无答案";
-  if (q.analysis) { els.feedbackAnalysis.textContent = q.analysis; els.feedbackAnalysisBlock.style.display = ""; }
-  else { els.feedbackAnalysisBlock.style.display = "none"; }
+
+function normalizeAnswer(v) { return String(v ?? "").trim().replace(/\s+/g, " ").toLowerCase(); }
+function splitBlankAnswer(v) { return normalizeAnswer(v).split(/[;；\s]+/).filter(Boolean); }
+function checkFillAnswer(input, answer) {
+  const userParts = splitBlankAnswer(input);
+  const answerParts = splitBlankAnswer(answer);
+  if (!answerParts.length) return normalizeAnswer(input) === normalizeAnswer(answer);
+  return userParts.length === answerParts.length && userParts.every((part, index) => part === answerParts[index]);
+}
+function showFeedback(q, correct) {
+  els.feedbackPanel.dataset.state = correct ? "ok" : "bad";
+  els.feedbackIcon.textContent = correct ? "✓" : "✕";
+  els.feedbackTitle.textContent = correct ? "回答正确" : "回答错误";
+  els.feedbackAnswer.textContent = q.answer || "无";
+  const hasAnalysis = Boolean(String(q.analysis || "").trim());
+  els.feedbackAnalysis.textContent = q.analysis || "";
+  els.feedbackAnalysisBlock.style.display = hasAnalysis ? "grid" : "none";
 }
 function hideFeedback() { els.feedbackPanel.dataset.state = "hidden"; }
-
-/* ===== INTERACTIONS ===== */
-function pickOption(key) {
-  const q = currentQuestion(); if (!q || q.type !== "choice") return;
-  const rec = recordFor(q.id);
-  // 已经答对就不让再点
-  if (rec.revealed && rec.correct) return;
-  const btn = els.choiceArea.querySelector(`[data-option="${key}"]`);
-  if (btn) addOptionRipple(btn);
-  const isFirstAnswer = !rec.revealed;
-  const correct = key === q.answer;
-  rec.selected = key;
-  // 错题记录只在首次答题时定，之后再选不改 correct（保证答错过的题永远在错题本里）
-  if (isFirstAnswer) {
-    rec.correct = correct;
-    rec.firstWrong = !correct;
-  } else if (correct) {
-    // 答错后再选对：本次答对了，但 firstWrong 保留
-    rec.correct = true;
-  }
-  rec.revealed = true;
-  rec.answerDismissed = false;
-  rec.attempts = (rec.attempts||0)+1;
-  rec.lastAt = Date.now();
-  if (isFirstAnswer) {
-    updateStreak(correct); recordAnswer(correct);
-  }
-  if (correct) triggerCorrectFeedback(); else triggerWrongFeedback();
-  shakeIcon();
-  render();
-  // 只在首次答题时触发15题节点动画
-  if (isFirstAnswer && answeredCount % 10 === 0) {
-    const role = chooseCheckpointMascot(correct);
-    if (correct) {
-      setTimeout(() => playMascotMoment(role, () => doGo(1)), 700);
-    } else {
-      pendingMascot = role;
-    }
-  } else if (correct) {
-    scheduleAutoNext(true);
-  }
-}
-function triggerCorrectFeedback() {
-  if (navigator.vibrate) navigator.vibrate([30, 50, 30]);
-  playCorrectSound();
-  const card = els.questionCard;
-  card.classList.remove("shake","wrong-border");
-  card.classList.add("correct-flash","correct-border");
-  setTimeout(() => card.classList.remove("correct-flash","correct-border"), 800);
-  launchConfetti();
-}
-function triggerWrongFeedback() {
-  if (navigator.vibrate) navigator.vibrate([80, 100, 80, 100, 80]);
-  playWrongSound();
-  const card = els.questionCard;
-  card.classList.remove("correct-flash","correct-border");
-  card.classList.add("shake","wrong-border");
-  setTimeout(() => card.classList.remove("shake","wrong-border"), 600);
-}
-function handlePrimaryClick() {
-  const q = currentQuestion(); if (!q) return;
-  const rec = recordFor(q.id);
-  if (q.type === "choice") { if (rec.revealed) go(1); return; }
-  if (q.type === "fill") {
-    const input = els.fillInput.value.trim(); if (!input) return;
-    // 如果已答过且输入没变，跳下一题
-    if (rec.revealed && input === (rec.input || "")) { go(1); return; }
-    // 重新提交或首次提交
-    rec.input = input; rec.correct = isFillCorrect(input, q.answer);
-    rec.revealed = true; rec.answerDismissed = false; rec.attempts = (rec.attempts||0)+1; rec.lastAt = Date.now();
-    updateStreak(rec.correct); recordAnswer(rec.correct);
-    if (rec.correct) triggerCorrectFeedback(); else triggerWrongFeedback();
-    shakeIcon();
-    render();
-    if (answeredCount % 10 === 0) {
-      const role = chooseCheckpointMascot(rec.correct);
-      if (rec.correct) { setTimeout(() => playMascotMoment(role, () => doGo(1)), 700); }
-      else { pendingMascot = role; }
-    } else {
-      if (rec.correct) scheduleAutoNext(true);
-    }
-    return;
-  }
-  if (rec.revealed) { go(1); return; }
-  rec.draft = els.memoryInput.value; rec.revealed = true; rec.answerDismissed = false; rec.lastAt = Date.now(); render();
-}
-function toggleMark() {
-  const q = currentQuestion(); if (!q) return;
-  const wasMarked = app.marked[q.id];
-  if (wasMarked) { delete app.marked[q.id]; }
-  else { app.marked[q.id] = Date.now(); launchCollectEffect(); }
-  render();
-}
-function launchCollectEffect() {
-  els.markBtn.classList.add("collecting");
-  setTimeout(() => els.markBtn.classList.remove("collecting"), 500);
-  // 聚拢粒子特效
-  const rect = els.markBtn.getBoundingClientRect();
-  for (let i = 0; i < 8; i++) {
-    const p = document.createElement("span");
-    p.className = "star-particle";
-    p.style.left = rect.left + rect.width/2 + "px";
-    p.style.top = rect.top + rect.height/2 + "px";
-    p.style.position = "fixed";
-    p.style.setProperty("--px", `${(Math.random()-0.5)*60}px`);
-    p.style.setProperty("--py", `${(Math.random()-0.5)*60}px`);
-    document.body.appendChild(p);
-    setTimeout(() => p.remove(), 600);
-  }
-}
-
-function updateStreak(c) { /* streak now updated only at checkpoints */ }
-function currentQuestion() { return filteredQuestions()[app.index]; }
-function go(delta) {
-  clearAutoNext(); dismissFloatingAnswer();
-  if (pendingMascot) {
-    const role = pendingMascot;
-    pendingMascot = null;
-    playMascotMoment(role, () => doGo(delta));
-    return;
-  }
-  doGo(delta);
-}
-function doGo(delta) {
-  const list = filteredQuestions(); if (!list.length) return;
-  app.index = Math.min(Math.max(app.index+delta,0), list.length-1); render();
-}
-function shuffle() { clearAutoNext(); dismissFloatingAnswer(); const list = filteredQuestions(); if (!list.length) return; app.index = Math.floor(Math.random()*list.length); render(); }
-function clearAutoNext() { clearTimeout(autoNextTimer); autoNextTimer = 0; }
-function scheduleAutoNext(ok) { clearAutoNext(); const l = filteredQuestions(); if (!ok || app.mode!=="practice" || !isMobileViewport() || app.index>=l.length-1) return; autoNextTimer = setTimeout(()=>go(1), 1350); }
-function dismissFloatingAnswer() { const q = currentQuestion(); if (!q) return; const r = app.records[q.id]; if (!r||!r.revealed) return; r.answerDismissed = true; hideFeedback(); }
-function isMobileViewport() { return matchMedia("(max-width:700px)").matches; }
-function launchConfetti() {
-  const layer = document.createElement("div"); layer.className = "confetti-burst";
-  const colors = ["#58cc02","#1cb0f6","#ffc800","#ff86d6","#ff9600"];
-  for (let i = 0; i < 36; i++) { const p = document.createElement("span"); p.style.setProperty("--x",`${Math.random()*100}vw`); p.style.setProperty("--dx",`${Math.random()*80-40}px`); p.style.setProperty("--rot",`${Math.random()*540-270}deg`); p.style.setProperty("--delay",`${Math.random()*0.18}s`); p.style.setProperty("--color",colors[i%colors.length]); layer.appendChild(p); }
-  document.body.appendChild(layer); setTimeout(()=>layer.remove(), 1500);
-}
-function isFillCorrect(input, answer) { const ni = normalize(input); const ps = String(answer||"").split(/[;；,，、]/).map(x=>normalize(x)).filter(Boolean); if (!ps.length) return false; return ps.every(p=>ni.includes(p)); }
-function normalize(t) { return String(t||"").toLowerCase().replace(/\s+/g,"").replace(/[，,；;。.\-_/、：:（）()]/g,""); }
-function setDrawer(open) { document.body.classList.toggle("drawer-open", open); els.mobileMenuBtn.setAttribute("aria-expanded", String(open)); els.drawerOverlay.hidden = !open; }
-function toggleDrawer() { setDrawer(!document.body.classList.contains("drawer-open")); }
-function closeDrawerOnMobile() { setDrawer(false); }
-function initTheme() {
-  const saved = localStorage.getItem("quiz-dark-mode");
-  if (saved === "1") { document.body.classList.add("dark"); updateThemeIcon(true); }
-}
-function updateThemeIcon(isDark) {
-  const btn = els.themeToggle;
-  if (!btn) return;
-  const img = btn.querySelector("img");
-  if (img) img.src = isDark ? "./assets/moon.png" : "./assets/sun2.png";
-}
-function toggleTheme() {
-  const on = document.body.classList.toggle("dark");
-  localStorage.setItem("quiz-dark-mode", on ? "1" : "0");
-  updateThemeIcon(on);
-  const meta = document.querySelector("#themeColorMeta");
-  if (meta) meta.content = on ? "#2a2255" : "#7B61FF";
-}
-function resetRecords() { app.records = {}; app.marked = {}; app.streak = 0; app.index = 0; answeredCount = 0; last15Results = []; render(); }
-function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法填空":"算","问答题":"问","算法设计与分析题":"设"}[q.section]||"题"; return `${p}${q.number}`; }
+function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法填空":"算","问答题":"问","算法设计题":"设","算法设计与分析题":"设"}[q.section]||"题"; return `${p}${q.number}`; }
 function escapeHtml(t) { return String(t||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
-function escapeAttr(t) { return escapeHtml(t).replaceAll("\n"," "); }
+function escapeAttr(t) { return escapeHtml(t); }
 
-function showModal({ type="info", icon="", title="", body="", confirmText="确认", cancelText="取消", onConfirm=null, onOk=null }) {
+function clearAutoNext() { if (autoNextTimer) { clearTimeout(autoNextTimer); autoNextTimer = 0; } }
+function goToIndex(nextIndex) { app.index = Math.max(0, Math.min(nextIndex, filteredQuestions().length - 1)); render(); }
+function doGo(step) { const list = filteredQuestions(); if (!list.length) return; goToIndex(app.index + step); }
+function nextQuestion() { doGo(1); }
+function prevQuestion() { doGo(-1); }
+
+function selectChoice(key) {
+  const list = filteredQuestions();
+  const q = list[app.index];
+  if (!q) return;
+  const rec = recordFor(q.id);
+  rec.selected = key;
+  renderQuestion(q, list);
+}
+
+function revealCurrent(forceCorrect) {
+  const list = filteredQuestions();
+  const q = list[app.index];
+  if (!q) return;
+  const rec = recordFor(q.id);
+  rec.revealed = true;
+  if (typeof forceCorrect === "boolean") rec.correct = forceCorrect;
+  render();
+}
+
+function checkCurrentAnswer() {
+  const list = filteredQuestions();
+  const q = list[app.index];
+  if (!q) return;
+  const rec = recordFor(q.id);
+  if (q.type === "choice") {
+    if (!rec.selected) return;
+    const isFirstAnswer = rec.correct === null && rec.revealed !== true;
+    const correct = normalizeAnswer(rec.selected) === normalizeAnswer(q.answer);
+    rec.correct = correct;
+    rec.revealed = true;
+    rec.attempts = (rec.attempts || 0) + 1;
+    if (!correct && rec.firstWrong == null) rec.firstWrong = true;
+    if (correct) { app.streak = (app.streak || 0) + 1; playCorrectSound(); }
+    else { app.streak = 0; playWrongSound(); }
+    recordAnswer(correct);
+    render();
+    if (correct) {
+      pulseStreak();
+      flashCorrect();
+    } else {
+      shakeWrong();
+    }
+    if (isFirstAnswer && answeredCount % 10 === 0) {
+      const role = chooseCheckpointMascot(correct);
+      if (correct) {
+        setTimeout(() => playMascotMoment(role, () => nextQuestion()), 700);
+      }
+    }
+    return;
+  }
+
+  const value = q.type === "fill" || q.type === "code" ? els.fillInput.value : els.memoryInput.value;
+  rec.input = value;
+  rec.attempts = (rec.attempts || 0) + 1;
+  const correct = q.type === "fill" || q.type === "code" ? checkFillAnswer(value, q.answer) : normalizeAnswer(value) === normalizeAnswer(q.answer);
+  rec.correct = correct;
+  rec.mastered = correct;
+  rec.revealed = true;
+  if (!correct && rec.firstWrong == null) rec.firstWrong = true;
+  if (correct) { app.streak = (app.streak || 0) + 1; playCorrectSound(); }
+  else { app.streak = 0; playWrongSound(); }
+  recordAnswer(correct);
+  render();
+  if (correct) { pulseStreak(); flashCorrect(); }
+  else { shakeWrong(); }
+  if (answeredCount % 10 === 0) {
+    const role = chooseCheckpointMascot(rec.correct);
+    if (rec.correct) { setTimeout(() => playMascotMoment(role, () => doGo(1)), 700); }
+  }
+}
+
+function handlePrimaryAction() {
+  const list = filteredQuestions();
+  const q = list[app.index];
+  if (!q) return;
+  const rec = recordFor(q.id);
+  if (rec.revealed || app.mode === "memorize" && els.primaryBtn.dataset.state === "next") {
+    nextQuestion();
+    return;
+  }
+  if (app.mode === "memorize") {
+    rec.revealed = true;
+    rec.mastered = true;
+    render();
+    return;
+  }
+  checkCurrentAnswer();
+}
+
+function toggleMark() {
+  const list = filteredQuestions();
+  const q = list[app.index];
+  if (!q) return;
+  if (app.marked[q.id]) delete app.marked[q.id];
+  else app.marked[q.id] = true;
+  render();
+}
+
+function shuffleQuestions() {
+  const list = filteredQuestions();
+  if (list.length < 2) return;
+  const currentId = list[app.index]?.id;
+  questions = [...questions].sort(() => Math.random() - 0.5);
+  const nextList = filteredQuestions();
+  app.index = Math.max(0, nextList.findIndex(item => item.id === currentId));
+  render();
+}
+
+function resetRecords() { app.records = {}; app.marked = {}; app.streak = 0; app.index = 0; answeredCount = 0; last15Results = []; render(); }
+
+function showModal({ type = "default", icon = "", title = "提示", body = "", confirmText = "确定", cancelText = "取消", onConfirm = null }) {
   const overlay = document.createElement("div");
   overlay.className = "custom-modal-overlay";
-  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
-  let iconHtml = "";
-  if (icon) iconHtml = `<div class="custom-modal-icon ${type}">${icon}</div>`;
-  let actionsHtml = "";
-  if (onOk) {
-    actionsHtml = `<div class="custom-modal-actions"><button class="btn-ok" type="button">${escapeHtml(confirmText)}</button></div>`;
-  } else {
-    actionsHtml = `<div class="custom-modal-actions"><button class="btn-cancel" type="button">${escapeHtml(cancelText)}</button><button class="btn-confirm" type="button">${escapeHtml(confirmText)}</button></div>`;
-  }
-  overlay.innerHTML = `<div class="custom-modal">${iconHtml}<div class="custom-modal-title">${title}</div><div class="custom-modal-body">${body}</div>${actionsHtml}</div>`;
+  overlay.innerHTML = `
+    <div class="custom-modal ${type === "danger" ? "danger" : ""}">
+      <div class="custom-modal-icon">${escapeHtml(icon)}</div>
+      <h3 class="custom-modal-title">${escapeHtml(title)}</h3>
+      <p class="custom-modal-body">${escapeHtml(body)}</p>
+      <div class="custom-modal-actions">
+        <button class="custom-modal-btn cancel" type="button">${escapeHtml(cancelText)}</button>
+        <button class="custom-modal-btn confirm" type="button">${escapeHtml(confirmText)}</button>
+      </div>
+    </div>
+  `;
   document.body.appendChild(overlay);
   const close = () => overlay.remove();
-  if (onOk) {
-    overlay.querySelector(".btn-ok").addEventListener("click", () => { onOk(); close(); });
-  } else {
-    overlay.querySelector(".btn-cancel").addEventListener("click", close);
-    overlay.querySelector(".btn-confirm").addEventListener("click", () => { if (onConfirm) onConfirm(); close(); });
-  }
-  return close;
+  overlay.querySelector(".cancel").addEventListener("click", close);
+  overlay.addEventListener("click", e => { if (e.target === overlay) close(); });
+  overlay.querySelector(".confirm").addEventListener("click", () => { close(); if (typeof onConfirm === "function") onConfirm(); });
 }
 
-function bindSwipeNavigation() {
-  els.questionCard.addEventListener("touchstart", e => { if (!isMobileViewport()||e.touches.length!==1) return; swipeStart = {x:e.touches[0].clientX, y:e.touches[0].clientY, at:Date.now()}; }, {passive:true});
-  els.questionCard.addEventListener("touchend", e => { if (!swipeStart||!isMobileViewport()) return; const t=e.changedTouches[0], dx=t.clientX-swipeStart.x, dy=t.clientY-swipeStart.y, el=Date.now()-swipeStart.at; swipeStart=null; if (el>700||Math.abs(dx)<70||Math.abs(dy)>55) return; go(dx<0?1:-1); }, {passive:true});
+function openDrawer() {
+  document.body.classList.add("drawer-open");
+  els.mobileMenuBtn?.setAttribute("aria-expanded", "true");
+  if (els.drawerOverlay) els.drawerOverlay.hidden = false;
+}
+function closeDrawerOnMobile() {
+  document.body.classList.remove("drawer-open");
+  els.mobileMenuBtn?.setAttribute("aria-expanded", "false");
+  if (els.drawerOverlay) els.drawerOverlay.hidden = true;
+}
+function toggleDrawer() { document.body.classList.contains("drawer-open") ? closeDrawerOnMobile() : openDrawer(); }
+
+function initTheme() {
+  const stored = localStorage.getItem("algorithm-review-theme");
+  const dark = stored === "dark";
+  document.body.classList.toggle("dark", dark);
+  updateThemeAssets();
+}
+function toggleTheme() {
+  const on = !document.body.classList.contains("dark");
+  document.body.classList.toggle("dark", on);
+  localStorage.setItem("algorithm-review-theme", on ? "dark" : "light");
+  updateThemeAssets();
+  render();
+}
+function updateThemeAssets() {
+  if (els.themeToggle) {
+    const img = els.themeToggle.querySelector("img");
+    if (img) img.src = document.body.classList.contains("dark") ? "./assets/moon.png" : "./assets/sun2.png";
+  }
+  const meta = document.querySelector("#themeColorMeta");
+  if (meta) meta.content = document.body.classList.contains("dark") ? "#2a2255" : "#7B61FF";
 }
 
 function bindEvents() {
-  els.modeTabs.forEach(btn => btn.addEventListener("click", () => {
-    if (btn.dataset.mode) { app.mode = btn.dataset.mode; app.status = "all"; }
-    if (btn.dataset.status) { app.status = btn.dataset.status; app.mode = btn.dataset.status === "marked" ? "memorize" : "practice"; }
-    app.index = 0; initFilters(); render(); closeDrawerOnMobile();
-  }));
-
-  // Custom dropdown: section
-  els.sectionToggle.addEventListener("click", e => { e.stopPropagation(); toggleDropdown(els.sectionDropdown, els.sectionMenu); });
-  els.sectionMenu.addEventListener("click", e => {
-    const btn = e.target.closest(".dropdown-item"); if (!btn) return;
-    app.section = btn.dataset.value; app.index = 0;
-    closeAllDropdowns(); initFilters(); render(); closeDrawerOnMobile();
+  els.mobileMenuBtn?.addEventListener("click", toggleDrawer);
+  els.drawerOverlay?.addEventListener("click", closeDrawerOnMobile);
+  els.themeToggle?.addEventListener("click", toggleTheme);
+  els.sectionToggle?.addEventListener("click", () => toggleDropdown(els.sectionDropdown, els.sectionMenu));
+  els.statusToggle?.addEventListener("click", () => toggleDropdown(els.statusDropdown, els.statusMenu));
+  document.addEventListener("click", e => {
+    if (!els.sectionDropdown?.contains(e.target)) els.sectionMenu?.classList.remove("open");
+    if (!els.statusDropdown?.contains(e.target)) els.statusMenu?.classList.remove("open");
   });
-
-  // Custom dropdown: status
-  els.statusToggle.addEventListener("click", e => { e.stopPropagation(); toggleDropdown(els.statusDropdown, els.statusMenu); });
-  els.statusMenu.addEventListener("click", e => {
-    const btn = e.target.closest(".dropdown-item"); if (!btn) return;
-    app.status = btn.dataset.value; app.index = 0;
-    closeAllDropdowns(); initFilters(); render(); closeDrawerOnMobile();
+  els.sectionMenu?.addEventListener("click", e => {
+    const btn = e.target.closest(".dropdown-item");
+    if (!btn) return;
+    app.section = btn.dataset.value || "全部题型";
+    app.index = 0;
+    initFilters();
+    render();
+    closeAllDropdowns();
   });
-
-  // Close dropdowns on outside click
-  document.addEventListener("click", () => closeAllDropdowns());
-
-  els.searchInput.addEventListener("input", () => { app.query = els.searchInput.value; app.index = 0; render(); });
-  els.questionNav.addEventListener("click", e => { const b = e.target.closest("[data-index]"); if (!b) return; app.index = Number(b.dataset.index); render(); closeDrawerOnMobile(); });
-  els.choiceArea.addEventListener("click", e => { const b = e.target.closest("[data-option]"); if (!b||b.disabled) return; pickOption(b.dataset.option); });
-  els.primaryBtn.addEventListener("click", handlePrimaryClick);
-  els.feedbackPanel.addEventListener("click", () => { if (els.feedbackPanel.dataset.state !== "hidden") dismissFloatingAnswer(); });
-  els.prevBtn.addEventListener("click", () => go(-1));
-  els.nextBtn.addEventListener("click", () => go(1));
-  els.markBtn.addEventListener("click", toggleMark);
-  els.shuffleBtn.addEventListener("click", shuffle);
-  if (els.resetBtn) els.resetBtn.addEventListener("click", () => {
-    showModal({
-      type: "danger", icon: "⚠️", title: "重新刷题",
-      body: "这将清除所有刷题记录和收藏，恢复初始状态，确定要重新开始吗？",
-      confirmText: "确认重置", cancelText: "取消",
-      onConfirm: resetRecords
-    });
+  els.statusMenu?.addEventListener("click", e => {
+    const btn = e.target.closest(".dropdown-item");
+    if (!btn) return;
+    app.status = btn.dataset.value || "all";
+    app.index = 0;
+    initFilters();
+    render();
+    closeAllDropdowns();
   });
-  els.restartBtn.addEventListener("click", () => {
-    showModal({
-      type: "danger", icon: "⚠️", title: "重新刷题",
-      body: "这将清除所有刷题记录和收藏，恢复初始状态，确定要重新开始吗？",
-      confirmText: "确认重置", cancelText: "取消",
-      onConfirm: resetRecords
-    });
-  });
-  els.importFile.addEventListener("change", async () => {
-    const f = els.importFile.files && els.importFile.files[0]; if (!f) return;
-    try { importQuestionBank(JSON.parse(await f.text())); } catch(e) {
-      showModal({ type: "danger", icon: "❌", title: "导入失败", body: e.message, confirmText: "知道了", onOk: () => {} });
+  els.searchInput?.addEventListener("input", e => { app.query = e.target.value || ""; app.index = 0; render(); });
+  els.restartBtn?.addEventListener("click", () => showModal({ title: "重新刷题", body: "这会清空当前刷题记录和收藏，是否继续？", confirmText: "确认重置", cancelText: "取消", onConfirm: resetRecords }));
+  els.restoreBankBtn?.addEventListener("click", restoreDefaultBank);
+  els.importFile?.addEventListener("change", async e => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      importQuestionBank(JSON.parse(text));
+    } catch (error) {
+      showModal({ type: "danger", icon: "!", title: "导入失败", body: error?.message || "题库文件格式不正确", confirmText: "知道了", cancelText: "关闭" });
+    } finally {
+      e.target.value = "";
     }
-    finally { els.importFile.value = ""; }
   });
-  els.restoreBankBtn.addEventListener("click", restoreDefaultBank);
-  els.mobileMenuBtn.addEventListener("click", toggleDrawer);
-  els.drawerOverlay.addEventListener("click", () => setDrawer(false));
-  els.themeToggle.addEventListener("click", toggleTheme);
-  els.fillInput.addEventListener("input", () => { const q = currentQuestion(); if (!q||q.type!=="fill"||recordFor(q.id).revealed) return; els.primaryBtn.disabled = !els.fillInput.value.trim(); });
-  els.fillInput.addEventListener("keydown", e => { if (e.key === "Enter") handlePrimaryClick(); });
-  els.memoryInput.addEventListener("input", () => { const q = currentQuestion(); if (q) { recordFor(q.id).draft = els.memoryInput.value; saveState(); } });
+  els.modeTabs.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const mode = btn.dataset.mode;
+      const status = btn.dataset.status;
+      if (mode) {
+        app.mode = mode;
+        app.status = "all";
+      }
+      if (status) {
+        app.status = status;
+        if (status === "wrong" || status === "marked") app.mode = "practice";
+      }
+      app.index = 0;
+      initFilters();
+      render();
+      closeDrawerOnMobile();
+    });
+  });
+  els.questionNav?.addEventListener("click", e => {
+    const btn = e.target.closest(".nav-item");
+    if (!btn) return;
+    const index = Number(btn.dataset.index);
+    if (Number.isFinite(index)) goToIndex(index);
+    closeDrawerOnMobile();
+  });
+  els.choiceArea?.addEventListener("click", e => {
+    const btn = e.target.closest(".option-btn");
+    if (!btn || btn.disabled) return;
+    addOptionRipple(btn);
+    selectChoice(btn.dataset.key);
+  });
+  els.primaryBtn?.addEventListener("click", handlePrimaryAction);
+  els.prevBtn?.addEventListener("click", prevQuestion);
+  els.nextBtn?.addEventListener("click", nextQuestion);
+  els.markBtn?.addEventListener("click", toggleMark);
+  els.shuffleBtn?.addEventListener("click", shuffleQuestions);
+  els.feedbackPanel?.addEventListener("click", hideFeedback);
+  els.fillInput?.addEventListener("keydown", e => { if (e.key === "Enter") handlePrimaryAction(); });
+  els.memoryInput?.addEventListener("input", e => { const list = filteredQuestions(); const q = list[app.index]; if (!q) return; recordFor(q.id).input = e.target.value; saveState(); });
+  els.fillInput?.addEventListener("input", e => { const list = filteredQuestions(); const q = list[app.index]; if (!q) return; recordFor(q.id).input = e.target.value; saveState(); });
   document.addEventListener("keydown", e => {
-    if (e.target.matches("input, textarea")) return;
-    if (e.key==="ArrowLeft") go(-1); else if (e.key==="ArrowRight") go(1);
-    else if (e.key==="Enter") { e.preventDefault(); handlePrimaryClick(); }
-    else if (/^[a-dA-D]$/.test(e.key)) { const q=currentQuestion(); if (q&&q.type==="choice") pickOption(e.key.toUpperCase()); }
+    if (e.key === "ArrowLeft") prevQuestion();
+    if (e.key === "ArrowRight") nextQuestion();
   });
-  bindSwipeNavigation();
+  els.questionCard?.addEventListener("touchstart", e => {
+    const touch = e.changedTouches?.[0];
+    if (!touch) return;
+    swipeStart = { x: touch.clientX, y: touch.clientY };
+  }, { passive: true });
+  els.questionCard?.addEventListener("touchend", e => {
+    const touch = e.changedTouches?.[0];
+    if (!touch || !swipeStart) return;
+    const dx = touch.clientX - swipeStart.x;
+    const dy = touch.clientY - swipeStart.y;
+    swipeStart = null;
+    if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+    if (dx < 0) nextQuestion();
+    else prevQuestion();
+  }, { passive: true });
 }
 
-/* ===== 10-QUESTION MASCOT CHECKPOINT ===== */
-
-/* ===== UNIFIED MASCOT SYSTEM ===== */
 let answeredCount = 0;
 let pendingMascot = null;
 let last15Results = [];
-let mascotTimeline = null;
-
 const MASCOT_CONFIG = {
-  gru: { image: "./assets/gru-front.webp", darkImage: "./assets/gru-dark.webp", duration: 2300, particle: "celebrate", lines: ["哼，这组勉强及格，咕噜勉强认可你。","就这？咕噜三岁就能全对了。","还行吧，没让咕噜太失望。","你这水平……咕噜决定再观察一组。","及格线飘过，要不要给你颁个安慰奖？"] },
-  boobo: { image: "./assets/boobo-front.webp", darkImage: "./assets/boobo-dark.webp", duration: 2300, particle: "blueDots", lines: ["啵…勉强过关，别得意。","这一组啵啵本来以为你会错更多。","啧，对了这么多，偷偷翻答案了吧？","还行，啵啵暂时不吐槽你。","这正确率…啵啵选择沉默。","啵，你变强了？不，可能是题太简单。"] },
-  mimo: { image: "./assets/mimo-front.webp", darkImage: "./assets/mimo-dark.webp", duration: 2300, particle: "softDots", lines: ["又错了？绵绵一点都不意外呢。","这题都能错，绵绵替你脸红。","错题本又要加厚了，开心吗？","绵绵早就料到你会栽在这里。","不着急否定自己？晚了，绵绵先否定你。","这道题难？不，是你太菜。"] },
-  waiwai: { image: "./assets/waiwai-front.webp", darkImage: "./assets/waiwai-dark.webp", duration: 2300, particle: "marks", lines: ["这题坑的就是你，果然踩了。","歪歪预言：下题你还得错。","被阴了一道，舒服吗？","歪歪早就看穿了，就你没看穿。","这题不怪你，怪你脑子不好使。","记仇？歪歪替你记着呢，厚厚一本。"] },
-  dodo: { image: "./assets/dodo-front.webp", darkImage: "./assets/dodo-dark.webp", duration: 2400, particle: "yellowBubbles", lines: ["累了？豆豆觉得你早就该累了。","休息吧，反正刷再多也就这样。","豆豆建议你关机睡觉，为你好，也为题目好。","这组结束，豆豆给你盖个「仍需努力」章。","脑子热了？正常，本来就容易过热。","喝口水吧，顺便冷静一下膨胀的自信。"] }
+  boobo: {
+    image: "./assets/boobo-front.webp",
+    darkImage: "./assets/boobo-dark.webp",
+    lines: ["稳住节奏，一题一题来。", "做得不错，继续推进。", "这题拿下，状态在线。"]
+  },
+  gru: {
+    image: "./assets/gru-front.webp",
+    darkImage: "./assets/gru-dark.webp",
+    lines: ["漂亮，这波节奏拉满。", "继续冲，已经很强了。", "这题很稳，保持手感。"]
+  },
+  mimo: {
+    image: "./assets/mimo-front.webp",
+    darkImage: "./assets/mimo-dark.webp",
+    lines: ["别急，慢一点更容易做对。", "卡住也没事，先看清题意。", "一步一步来，你可以的。"]
+  },
+  waiwai: {
+    image: "./assets/waiwai-front.webp",
+    darkImage: "./assets/waiwai-dark.webp",
+    lines: ["先别慌，回到条件本身。", "错一道不影响后面发挥。", "想清楚再出手，节奏会回来。"]
+  },
+  dodo: {
+    image: "./assets/dodo-front.webp",
+    darkImage: "./assets/dodo-dark.webp",
+    lines: ["继续加油，下一题争取更稳。", "状态在慢慢起来，别停。", "保持专注，马上就顺了。"]
+  }
 };
 
-const MASCOT_ANIM = {
-  gru: { from: { y: 120, scale: 0.62, rotation: -8 }, to: { y: 0, scale: 1, rotation: 0 }, keyframes: [{ t: 0.42, y: -24, scale: 1.14, rotation: 4 }, { t: 0.62, y: 8, scale: 0.96, rotation: -2 }, { t: 0.78, y: -10, scale: 1.04, rotation: 1 }], ease: "cubic-bezier(.18,1.35,.36,1)" },
-  boobo: { from: { y: 100, scale: 0.72, rotation: -6 }, to: { y: 0, scale: 1, rotation: 0 }, keyframes: [{ t: 0.36, y: -14, scale: 1.08, rotation: 4 }, { t: 0.56, y: 6, scale: 0.98, rotation: -3 }, { t: 0.74, y: -5, scale: 1.03, rotation: 2 }], ease: "cubic-bezier(.2,1.2,.28,1)" },
-  mimo: { from: { y: 40, scale: 0.72, rotation: 0 }, to: { y: 0, scale: 1, rotation: 0 }, keyframes: [{ t: 0.38, y: -8, scale: 1.08, rotation: 0 }, { t: 0.62, y: 4, scale: 0.98, rotation: 0 }, { t: 0.82, y: -3, scale: 1.03, rotation: 0 }], ease: "cubic-bezier(.2,1.2,.3,1)" },
-  waiwai: { from: { x: -90, y: 26, scale: 0.72, rotation: -16 }, to: { x: 0, y: 0, scale: 1, rotation: 0 }, keyframes: [{ t: 0.38, x: 16, y: -8, scale: 1.08, rotation: 8 }, { t: 0.58, x: -8, y: 4, scale: 0.98, rotation: -5 }, { t: 0.76, x: 4, y: -2, scale: 1.03, rotation: 3 }], ease: "cubic-bezier(.16,1.25,.34,1)" },
-  dodo: { from: { y: 80, scale: 0.82, rotation: 0 }, to: { y: 0, scale: 1, rotation: 0 }, keyframes: [{ t: 0.36, y: -8, scale: 1.04, rotation: 0 }, { t: 0.56, y: 6, scale: 0.98, rotation: 0 }, { t: 0.76, y: -3, scale: 1.02, rotation: 0 }], ease: "cubic-bezier(.18,1.15,.32,1)" }
-};
-
-function playMascotMoment(role, onComplete) {
-  const config = MASCOT_CONFIG[role];
-  if (!config) { if (onComplete) onComplete(); return; }
-
-  // GSAP not loaded? skip silently.
-  if (typeof gsap === "undefined") { if (onComplete) onComplete(); return; }
-
-  // Kill existing timeline if another animation is in progress
-  if (mascotTimeline) { mascotTimeline.kill(); mascotTimeline = null; }
-
-  const overlay = document.getElementById("mascotOverlay");
-  const img = document.getElementById("mascotImg");
-  const bubble = document.getElementById("mascotBubble");
-
-  bubble.textContent = config.lines[Math.floor(Math.random() * config.lines.length)];
-
-  const darkImg = config.darkImage || config.image;
-  const preload = new Image();
-  preload.onload = function () {
-    img.src = document.body.classList.contains("dark") ? darkImg : config.image;
-    // Make overlay visible
-    overlay.style.display = "flex";
-    overlay.style.opacity = 0;
-    overlay.classList.add(`role-${role}`);
-
-    const anim = MASCOT_ANIM[role];
-
-    // Set image initial state
-    gsap.set(img, { opacity: 0, x: anim.from.x || 0, y: anim.from.y || 0, scale: anim.from.scale, rotation: anim.from.rotation || 0, transformOrigin: "center bottom" });
-    gsap.set(bubble, { opacity: 0, y: 12, scale: 0.94 });
-
-    mascotTimeline = gsap.timeline({
-      onComplete: () => {
-        overlay.style.display = "none";
-        overlay.className = "mascot-overlay";
-        clearMascotParticles();
-        mascotTimeline = null;
-        triggerFireBurst();
-        if (onComplete) onComplete();
-      }
-    });
-
-    // 1. Overlay fade in (0.28s)
-    mascotTimeline.to(overlay, { opacity: 1, duration: 0.28, ease: "power2.out" });
-
-    // 2. Image enter with elastic bounce (1s)
-    const easeMap = { gru: "elastic.out(1, 0.4)", boobo: "elastic.out(1, 0.5)", mimo: "elastic.out(1, 0.55)", waiwai: "back.out(2.5)", dodo: "elastic.out(1, 0.6)" };
-    mascotTimeline.to(img, {
-      opacity: 1,
-      x: anim.to.x || 0,
-      y: anim.to.y || 0,
-      scale: anim.to.scale,
-      rotation: anim.to.rotation || 0,
-      duration: 1.0,
-      ease: easeMap[role] || "elastic.out(1, 0.5)"
-    }, "<");
-
-    // 3. Bubble pop in (delayed)
-    mascotTimeline.to(bubble, {
-      opacity: 1, y: 0, scale: 1, duration: 0.4, ease: "back.out(1.7)"
-    }, "-=0.4");
-
-    // 4. Particles (synchronous, fire-and-forget)
-    if (config.particle === "celebrate") createCelebrateParticles(false);
-    else if (config.particle === "blueDots") createFloatingDots("boobo-dot", ["#59b8ff","#9bd8ff","#c8ecff","#7cc8ff"], 16, 1300, false);
-    else if (config.particle === "softDots") createFloatingDots("mimo-soft-dot", ["#ff9fbd","#ffc6d8","#ffdce7","#ffb3cc"], 18, 1500, false);
-    else if (config.particle === "yellowBubbles") createFloatingDots("dodo-bubble-dot", ["#ffd36a","#ffe39b","#ffc24b","#fff0c2"], 14, 1700, false);
-    else if (config.particle === "marks") createWaiwaiMarks(false);
-
-    // 5. Hold for 1.2s
-    mascotTimeline.to({}, { duration: 1.2 });
-
-    // 6. Fade out (0.3s)
-    mascotTimeline.to(overlay, { opacity: 0, duration: 0.3, ease: "power2.in" });
-  };
-
-  preload.onerror = function () {
-    if (onComplete) onComplete();
-  };
-  preload.src = document.body.classList.contains("dark") ? (config.darkImage || config.image) : config.image;
-}
-
-function createMascotParticle(type) {
-  clearMascotParticles();
-  if (type === "celebrate") createCelebrateParticles(false);
-  else if (type === "blueDots") createFloatingDots("boobo-dot", ["#59b8ff","#9bd8ff","#c8ecff","#7cc8ff"], 16, 1300, false);
-  else if (type === "softDots") createFloatingDots("mimo-soft-dot", ["#ff9fbd","#ffc6d8","#ffdce7","#ffb3cc"], 18, 1500, false);
-  else if (type === "yellowBubbles") createFloatingDots("dodo-bubble-dot", ["#ffd36a","#ffe39b","#ffc24b","#fff0c2"], 14, 1700, false);
-  else if (type === "marks") createWaiwaiMarks(false);
-}
-function createFloatingDots(cls, colors, count, dur, reduced) {
-  if (reduced) { count = Math.max(3, Math.floor(count * 0.4)); }
-  const c = document.getElementById("mascotParticles");
-  for (let i = 0; i < count; i++) { const d = document.createElement("span"); d.className = cls; const a = Math.random()*Math.PI*2, dist = 45+Math.random()*85; d.style.setProperty("--x",`${Math.cos(a)*dist}px`); d.style.setProperty("--y",`${Math.sin(a)*dist-25}px`); d.style.background = colors[Math.floor(Math.random()*colors.length)]; const s = 5+Math.random()*9; d.style.width=`${s}px`; d.style.height=`${s}px`; d.style.animationDelay=`${Math.random()*220}ms`; d.style.animationDuration=`${reduced ? 400 : dur}ms`; c.appendChild(d); setTimeout(()=>d.remove(), reduced ? 400 : dur); }
-}
-function createCelebrateParticles(reduced) {
-  const c = document.getElementById("mascotParticles"); const colors = ["#58cc02","#1cb0f6","#ff9600","#ce82ff","#ff4b4b"]; const count = reduced ? 8 : 28;
-  for (let i = 0; i < count; i++) { const p = document.createElement("span"); p.className = "mascot-particle"; const a = (Math.PI*2*i)/count, dist = 90+Math.random()*110; p.style.setProperty("--x",`${Math.cos(a)*dist}px`); p.style.setProperty("--y",`${Math.sin(a)*dist}px`); p.style.background = colors[Math.floor(Math.random()*colors.length)]; const s = 6+Math.random()*8; p.style.width=`${s}px`; p.style.height=`${s}px`; p.style.animationDuration=`${reduced ? 400 : 900}ms`; c.appendChild(p); setTimeout(()=>p.remove(), reduced ? 400 : 1000); }
-}
-function createWaiwaiMarks(reduced) {
-  const c = document.getElementById("mascotParticles"); const marks = ["?","!","#","…","?!"]; const count = reduced ? 4 : 12;
-  for (let i = 0; i < count; i++) { const m = document.createElement("span"); m.className = "waiwai-mark"; m.textContent = marks[Math.floor(Math.random()*marks.length)]; const a = Math.random()*Math.PI*2, dist = 60+Math.random()*90; m.style.setProperty("--x",`${Math.cos(a)*dist}px`); m.style.setProperty("--y",`${Math.sin(a)*dist-20}px`); m.style.setProperty("--r",`${-24+Math.random()*48}deg`); m.style.animationDelay=`${Math.random()*180}ms`; m.style.animationDuration=`${reduced ? 400 : 950}ms`; c.appendChild(m); setTimeout(()=>m.remove(), reduced ? 400 : 1200); }
-}
-function clearMascotParticles() { const c = document.getElementById("mascotParticles"); if (c) c.innerHTML = ""; }
-
-function triggerFireBurst() {
+function pulseStreak() {
+  const count = els.streakCount;
   const icon = document.getElementById("streakIcon");
-  const count = document.getElementById("streakCount");
-  if (!icon || !count) return;
-  if (typeof gsap === "undefined") return;
-
-  // Update mood text
+  if (!count || !icon || !window.gsap) return;
   count.textContent = getMoodWord(answeredCount);
-
-  // Text orange flash
-  gsap.fromTo(count, { color: "#ff4500" }, { color: "#4b4b4b", duration: 1.2, ease: "power2.out" });
+  gsap.fromTo(icon, { scale: .8, rotate: -12 }, { scale: 1.15, rotate: 0, duration: .32, ease: "back.out(2)" });
+  gsap.fromTo(count, { scale: .9, color: "#ff9f1c" }, { scale: 1, color: "", duration: .42, ease: "power2.out" });
 }
-
-// 每道题答完后图标抖动+轻微放大（Keynote风格）
-function shakeIcon() {
-  const icon = document.getElementById("streakIcon");
-  if (!icon || typeof gsap === "undefined") return;
-  gsap.timeline()
-    .to(icon, { scale: 1.2, duration: 0.06, ease: "power2.out" })
-    .to(icon, { x: -3, duration: 0.04, ease: "power1.inOut" })
-    .to(icon, { x: 3, duration: 0.04, ease: "power1.inOut" })
-    .to(icon, { x: -2, duration: 0.04, ease: "power1.inOut" })
-    .to(icon, { x: 2, duration: 0.04, ease: "power1.inOut" })
-    .to(icon, { x: -1, duration: 0.03, ease: "power1.inOut" })
-    .to(icon, { x: 0, scale: 1, duration: 0.15, ease: "power2.out" });
+function flashCorrect() {
+  els.questionCard?.classList.remove("wrong-border", "shake");
+  els.questionCard?.classList.add("correct-flash", "correct-border");
+  setTimeout(() => els.questionCard?.classList.remove("correct-flash", "correct-border"), 620);
 }
-
-
-
+function shakeWrong() {
+  els.questionCard?.classList.remove("correct-flash", "correct-border");
+  els.questionCard?.classList.add("shake", "wrong-border");
+  setTimeout(() => els.questionCard?.classList.remove("shake", "wrong-border"), 560);
+}
+function addOptionRipple(btn) { btn.style.setProperty("--cx","50%"); btn.style.setProperty("--cy","50%"); btn.classList.add("ripple"); setTimeout(()=>btn.classList.remove("ripple"), 400); }
 function recordAnswer(isCorrect) { last15Results.push({ correct: isCorrect }); if (last15Results.length > 15) last15Results.shift(); answeredCount++; }
-
 function chooseCheckpointMascot(isCorrect) {
   const total = last15Results.length, correctCount = last15Results.filter(r => r.correct).length;
   const accuracy = total > 0 ? correctCount / total : 0;
   if (isCorrect) { if (accuracy >= 0.85) return "gru"; if (accuracy >= 0.6) return "boobo"; return "dodo"; }
-  else { if (accuracy < 0.6) return "mimo"; return "waiwai"; }
+  if (accuracy < 0.6) return "mimo";
+  return "waiwai";
+}
+function createMascotParticles(role) {
+  const container = document.getElementById("mascotParticles");
+  if (!container) return;
+  container.innerHTML = "";
+  const count = role === "waiwai" ? 8 : 10;
+  for (let i = 0; i < count; i++) {
+    const node = document.createElement("span");
+    node.className = role === "waiwai" ? "waiwai-mark" : (role === "boobo" ? "boobo-dot" : role === "mimo" ? "mimo-soft-dot" : role === "dodo" ? "dodo-bubble-dot" : "mascot-particle");
+    node.style.setProperty("--x", `${Math.round((Math.random() - .5) * 180)}px`);
+    node.style.setProperty("--y", `${Math.round((Math.random() - .5) * 180)}px`);
+    node.style.setProperty("--r", `${Math.round((Math.random() - .5) * 80)}deg`);
+    if (role === "waiwai") node.textContent = "!";
+    else node.style.background = role === "gru" ? "#58cc02" : role === "boobo" ? "#59b8ff" : role === "mimo" ? "#ff9fbd" : "#ffbf3d";
+    container.appendChild(node);
+  }
+}
+function playMascotMoment(role, onComplete) {
+  const overlay = document.getElementById("mascotOverlay");
+  const img = document.getElementById("mascotImg");
+  const bubble = document.getElementById("mascotBubble");
+  if (!overlay || !img || !bubble) { if (typeof onComplete === "function") onComplete(); return; }
+  const cfg = MASCOT_CONFIG[role] || MASCOT_CONFIG.boobo;
+  overlay.className = `mascot-overlay show role-${role}`;
+  img.src = document.body.classList.contains("dark") ? (cfg.darkImage || cfg.image) : cfg.image;
+  bubble.textContent = cfg.lines[Math.floor(Math.random() * cfg.lines.length)];
+  createMascotParticles(role);
+  clearTimeout(pendingMascot);
+  pendingMascot = setTimeout(() => {
+    overlay.classList.add("hide");
+    setTimeout(() => {
+      overlay.className = "mascot-overlay";
+      overlay.classList.remove("hide");
+      if (typeof onComplete === "function") onComplete();
+    }, 260);
+  }, 1800);
 }
 
-/* ===== OPTION RIPPLE EFFECT ===== */
-function addOptionRipple(btn) { btn.style.setProperty("--cx","50%"); btn.style.setProperty("--cy","50%"); btn.classList.add("ripple"); setTimeout(()=>btn.classList.remove("ripple"), 400); }
-
-initTheme(); initFilters(); bindEvents(); render();
-
-// 预加载所有角色图片
-Object.values(MASCOT_CONFIG).forEach(c => {
-  const i1 = new Image(); i1.src = c.image;
-  if (c.darkImage) { const i2 = new Image(); i2.src = c.darkImage; }
-});
-
-/* ===== RIGHT PANEL UPDATE ===== */
 function updateRightPanel() {
   const rpDone = document.getElementById("rpDone");
   const rpAccuracy = document.getElementById("rpAccuracy");
@@ -751,9 +687,8 @@ function updateRightPanel() {
   const rpMascotImg = document.getElementById("rpMascotImg");
   const rpMascotLine = document.getElementById("rpMascotLine");
   const rpTipsList = document.getElementById("rpTipsList");
-  if (!rpDone) return; // right panel not in DOM (mobile)
+  if (!rpDone) return;
 
-  // Stats
   const done = questions.filter(q => { const r = app.records[q.id]; return r && (r.revealed || r.correct !== null); }).length;
   const checked = Object.values(app.records).filter(r => r.correct !== null);
   const correct = checked.filter(r => r.correct === true).length;
@@ -763,13 +698,11 @@ function updateRightPanel() {
   rpStreak.textContent = app.streak || 0;
   rpMarked.textContent = Object.keys(app.marked).length;
 
-  // Energy (progress toward next 15-question checkpoint)
   const progress = answeredCount % 15;
-  const left = 15 - progress;
+  const left = progress === 0 ? 15 : 15 - progress;
   rpEnergyFill.style.width = Math.round((progress / 15) * 100) + "%";
   rpEnergyLeft.textContent = left;
 
-  // Mascot (based on recent performance)
   const total = last15Results.length;
   const recentCorrect = last15Results.filter(r => r.correct).length;
   const recentAcc = total > 0 ? recentCorrect / total : 0.5;
@@ -780,12 +713,9 @@ function updateRightPanel() {
     else if (recentAcc >= 0.6) { mascotRole = "boobo"; mascotLine = MASCOT_CONFIG.boobo.lines[Math.floor(Math.random() * MASCOT_CONFIG.boobo.lines.length)]; }
     else { mascotRole = "mimo"; mascotLine = MASCOT_CONFIG.mimo.lines[Math.floor(Math.random() * MASCOT_CONFIG.mimo.lines.length)]; }
   }
-  rpMascotImg.src = document.body.classList.contains("dark")
-    ? (MASCOT_CONFIG[mascotRole].darkImage || MASCOT_CONFIG[mascotRole].image)
-    : MASCOT_CONFIG[mascotRole].image;
+  rpMascotImg.src = document.body.classList.contains("dark") ? (MASCOT_CONFIG[mascotRole].darkImage || MASCOT_CONFIG[mascotRole].image) : MASCOT_CONFIG[mascotRole].image;
   rpMascotLine.textContent = '"' + mascotLine + '"';
 
-  // Tips (find most common wrong sections)
   const wrongSections = {};
   questions.forEach(q => {
     const r = app.records[q.id];
@@ -802,7 +732,13 @@ function updateRightPanel() {
   }
 }
 
-// Hook into render
-const _origRender = render;
-render = function() { _origRender(); updateRightPanel(); };
+initTheme(); initFilters(); bindEvents(); render();
 
+Object.values(MASCOT_CONFIG).forEach(c => {
+  const i1 = new Image(); i1.src = c.image;
+  if (c.darkImage) { const i2 = new Image(); i2.src = c.darkImage; }
+});
+
+const _origRender = render;
+render = function() { _origRender(); updateRightPanel(); saveState(); };
+render();
