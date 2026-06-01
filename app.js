@@ -249,6 +249,7 @@ window.importQuestionBank = importQuestionBank;
 
 let swipeStart = null;
 let autoNextTimer = 0;
+let _feedbackDelayTimer = 0;
 
 function stateKey(id) { return STATE_PREFIX + id; }
 function loadState(id) {
@@ -413,8 +414,16 @@ function renderQuestion(q, list) {
     els.memoryInput.disabled = reveal;
   }
 
-  if (reveal || rec.correct === false) showFeedback(q, rec.correct !== false);
-  else hideFeedback();
+  if (reveal) {
+    showFeedback(q, rec.correct !== false);
+  } else if (rec.correct === false) {
+    // 选错后延迟展示解析，避免挡住选项
+    clearTimeout(_feedbackDelayTimer);
+    _feedbackDelayTimer = setTimeout(() => showFeedback(q, false), 650);
+  } else {
+    hideFeedback();
+    clearTimeout(_feedbackDelayTimer);
+  }
 
   if (q.id !== lastShownId) { lastShownId = q.id; animateCardIn(); }
 }
@@ -441,7 +450,7 @@ function showFeedback(q, correct) {
   els.feedbackAnalysis.textContent = q.analysis || "";
   els.feedbackAnalysisBlock.style.display = hasAnalysis ? "grid" : "none";
 }
-function hideFeedback() { els.feedbackPanel.dataset.state = "hidden"; }
+function hideFeedback() { clearTimeout(_feedbackDelayTimer); els.feedbackPanel.dataset.state = "hidden"; }
 function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法填空":"算","问答题":"问","算法设计题":"设","算法设计与分析题":"设","单选题":"单","判断题":"判","分析题":"析","应用题":"用","综合题":"综","基础概念":"基","易错辨析":"易","应用提高":"高"}[q.section]||"题"; return `${p}${q.number}`; }
 function escapeHtml(t) { return String(t||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
 function escapeAttr(t) { return escapeHtml(t); }
