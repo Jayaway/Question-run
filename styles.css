@@ -1101,38 +1101,28 @@ body.dark .admin-entry.active { background: #18351F; color: #7EE35B; border-colo
 .perf-lite .bank-group-arrow,
 .perf-lite .progress-segments .seg-bar,
 .perf-lite .rp-energy-fill {
-  transition-duration: .08s !important;
+  transition-duration: .12s !important;
 }
 .perf-lite .lesson-header,
 .perf-lite .feedback-panel {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
 }
-.perf-lite .feedback-panel {
-  box-shadow: 0 8px 18px rgba(0,0,0,.12);
-}
 .perf-lite .sidebar {
   box-shadow: none;
   will-change: transform;
 }
-.perf-lite .mobile-menu-btn,
+/* 只禁用重绘开销大的阴影，保留按钮3D阴影 */
 .perf-lite .dropdown-menu,
-.perf-lite .nav-item.active,
-.perf-lite .primary-btn,
-.perf-lite .import-btn.primary,
 .perf-lite .custom-modal,
-.perf-lite .mascot-bubble,
 .perf-lite .prompt {
   box-shadow: none !important;
 }
-.perf-lite .option-btn::before {
-  background: radial-gradient(circle at 50% 50%, rgba(151,213,250,.18) 0%, transparent 58%);
-  transition-duration: .14s;
-}
+.perf-lite .option-btn::before { display: none; }
 .perf-lite .mascot-particles {
   display: none !important;
 }
-.perf-lite .question-card.correct-flash { animation: correct-pop-lite .28s ease-out; box-shadow: none; }
+.perf-lite .question-card.correct-flash { animation: correct-pop-lite .28s ease-out; }
 .perf-lite .question-card.shake { animation: shake-lite .22s ease-out; }
 .perf-lite .streak-pop { animation-duration: .18s; }
 @keyframes correct-pop-lite {
