@@ -362,8 +362,8 @@ function renderQuestion(q, list) {
   els.markBtn.classList.toggle("active", Boolean(app.marked[q.id]));
   els.markBtn.setAttribute("aria-pressed", String(Boolean(app.marked[q.id])));
   els.markIcon.innerHTML = app.marked[q.id]
-    ? `<img src="./assets/star.png" class="mark-star-img active" alt="">`
-    : `<img src="./assets/star.png" class="mark-star-img" alt="">`;
+    ? `<img src="./assets/star.webp" class="mark-star-img active" alt="">`
+    : `<img src="./assets/star.webp" class="mark-star-img" alt="">`;
   els.prevBtn.disabled = app.index === 0; els.nextBtn.disabled = app.index === list.length - 1;
   els.primaryBtn.disabled = false;
   const canProceed = reveal || rec.correct === false;
@@ -394,8 +394,8 @@ function renderQuestion(q, list) {
       if (showResult) {
         const selected = rec.selected === opt.key;
         const isCorrect = normalizeAnswer(opt.key) === normalizeAnswer(q.answer);
-        if (isCorrect) { cls += " correct"; mark = `<img src="./assets/check-mark.png" class="option-mark-img" alt="">`; }
-        else if (selected) { cls += " wrong"; mark = `<img src="./assets/x-mark.png" class="option-mark-img" alt="">`; }
+        if (isCorrect) { cls += " correct"; mark = `<img src="./assets/check-mark.webp" class="option-mark-img" alt="">`; }
+        else if (selected) { cls += " wrong"; mark = `<img src="./assets/x-mark.webp" class="option-mark-img" alt="">`; }
       }
       // 已揭示（正确/点下一题/重选正确）后禁用选项
       return `<button class="${cls}" type="button" data-key="${escapeAttr(opt.key)}" ${reveal ? "disabled" : ""}><span class="option-key">${escapeHtml(opt.key)}</span><span>${escapeHtml(opt.text)}</span><span class="option-mark">${mark}</span></button>`;
@@ -433,10 +433,10 @@ function checkFillAnswer(input, answer) {
 function showFeedback(q, correct) {
   els.feedbackPanel.dataset.state = correct ? "ok" : "bad";
   if (correct) {
-    const imgs = ["./assets/correct-sunglasses.png", "./assets/correct-glow.png", "./assets/correct-celebrate.png"];
+    const imgs = ["./assets/correct-sunglasses.webp", "./assets/correct-glow.webp", "./assets/correct-celebrate.webp"];
     els.feedbackIcon.innerHTML = `<img src="${imgs[Math.floor(Math.random() * 3)]}" class="feedback-icon-img" alt="">`;
   } else {
-    els.feedbackIcon.innerHTML = `<img src="./assets/wrong-speechless.png" class="feedback-icon-img" alt="">`;
+    els.feedbackIcon.innerHTML = `<img src="./assets/wrong-speechless.webp" class="feedback-icon-img" alt="">`;
   }
   els.feedbackTitle.textContent = correct ? "回答正确" : "回答错误";
   els.feedbackAnswer.textContent = q.answer || "无";
@@ -632,7 +632,7 @@ function toggleTheme() {
 function updateThemeAssets() {
   if (els.themeToggle) {
     const img = els.themeToggle.querySelector("img");
-    if (img) img.src = document.body.classList.contains("dark") ? "./assets/moon.png" : "./assets/sun2.png";
+    if (img) img.src = document.body.classList.contains("dark") ? "./assets/moon.webp" : "./assets/sun2.png";
   }
   const meta = document.querySelector("#themeColorMeta");
   if (meta) meta.content = document.body.classList.contains("dark") ? "#101314" : "#f8fbf5";
@@ -667,7 +667,7 @@ function bindEvents() {
     closeAllDropdowns();
   });
   els.searchInput?.addEventListener("input", e => { app.query = e.target.value || ""; app.index = 0; render(); });
-  els.restartBtn?.addEventListener("click", () => showModal({ icon: `<img src="./assets/question-icon.png" class="modal-icon-img" alt="">`, title: "重新刷题", body: "这会清空当前题库的刷题记录和收藏，是否继续？", confirmText: "确认重置", cancelText: "取消", onConfirm: resetRecords }));
+  els.restartBtn?.addEventListener("click", () => showModal({ icon: `<img src="./assets/question-icon.webp" class="modal-icon-img" alt="">`, title: "重新刷题", body: "这会清空当前题库的刷题记录和收藏，是否继续？", confirmText: "确认重置", cancelText: "取消", onConfirm: resetRecords }));
   els.bankPicker?.addEventListener("click", e => {
     const del = e.target.closest(".bank-del");
     if (del) { e.stopPropagation(); deleteCustomBank(del.dataset.del); return; }
@@ -993,12 +993,12 @@ Object.values(MASCOT_CONFIG).forEach(c => {
 });
 // Preload feedback icon + option mark images
 if (!PERFORMANCE_MODE) {
-  new Image().src = "./assets/check-mark.png";
-  new Image().src = "./assets/x-mark.png";
-  new Image().src = "./assets/correct-sunglasses.png";
-  new Image().src = "./assets/correct-glow.png";
-  new Image().src = "./assets/correct-celebrate.png";
-  new Image().src = "./assets/wrong-speechless.png";
+  new Image().src = "./assets/check-mark.webp";
+  new Image().src = "./assets/x-mark.webp";
+  new Image().src = "./assets/correct-sunglasses.webp";
+  new Image().src = "./assets/correct-glow.webp";
+  new Image().src = "./assets/correct-celebrate.webp";
+  new Image().src = "./assets/wrong-speechless.webp";
 }
 
 // 每次渲染后自动保存状态
