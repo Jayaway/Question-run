@@ -54,7 +54,6 @@ button:disabled { cursor: not-allowed; opacity: .5; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 3px solid rgba(28,176,246,.35); outline-offset: 2px; }
 .mobile-menu-btn, .drawer-overlay { display: none; }
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 1fr; }
-.right-panel { display: none !important; }
 
 .sidebar { position: fixed; top: 0; left: 0; z-index: 30; width: min(86vw,320px); height: 100vh; padding: 60px 18px 80px; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; background: #7B61FF; border-right: 3px solid #5a45cc; box-shadow: 14px 0 34px rgba(0,0,0,.15); transform: translateX(-105%); transition: transform .26s ease; }
 body.drawer-open .sidebar { transform: translateX(0); }
@@ -598,92 +597,6 @@ details[open] > .collapse-toggle::before { transform: rotate(90deg); }
   100% { transform: scale(1); }
 }
 
-.rp-card {
-  padding: 14px 16px;
-  border: 2px solid #e8e0ff;
-  border-radius: 14px;
-  background: #fff;
-}
-.rp-title {
-  margin: 0 0 10px;
-  font-size: 13px;
-  font-weight: 900;
-  color: #7B61FF;
-  letter-spacing: .5px;
-  text-transform: uppercase;
-}
-.rp-stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-}
-.rp-stats-grid div {
-  padding: 10px 8px;
-  border: 2px solid #f0ecff;
-  border-radius: 10px;
-  text-align: center;
-  background: #faf8ff;
-}
-.rp-stats-grid span {
-  display: block;
-  font-size: 20px;
-  font-weight: 900;
-  color: #5a4db0;
-}
-.rp-stats-grid small {
-  display: block;
-  margin-top: 2px;
-  font-size: 11px;
-  color: #999;
-}
-.rp-energy-bar {
-  height: 10px;
-  border-radius: 999px;
-  background: #f0ecff;
-  overflow: hidden;
-}
-.rp-energy-fill {
-  height: 100%;
-  width: 0%;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #7B61FF, #a78bfa);
-  transition: width .4s ease;
-}
-.rp-energy-text {
-  margin: 8px 0 0;
-  font-size: 12px;
-  color: #777;
-  font-weight: 700;
-}
-.rp-mascot-inner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.rp-mascot-img {
-  width: 56px;
-  height: 56px;
-  object-fit: contain;
-  flex-shrink: 0;
-}
-.rp-mascot-line {
-  margin: 0;
-  font-size: 13px;
-  font-weight: 700;
-  color: #555;
-  line-height: 1.4;
-  font-style: italic;
-}
-.rp-tips-list {
-  margin: 0;
-  padding: 0 0 0 16px;
-  font-size: 13px;
-  font-weight: 700;
-  color: #666;
-  line-height: 1.6;
-}
-.rp-tips-list li { margin-bottom: 4px; }
-
 .custom-modal-overlay {
   position: fixed;
   inset: 0;
@@ -813,7 +726,6 @@ body.dark .prompt,
 body.dark .feedback-panel,
 body.dark .island-card,
 body.dark .island-header,
-body.dark .rp-card,
 body.dark .stats div,
 body.dark .study-tools,
 body.dark .dropdown-menu,
@@ -836,13 +748,10 @@ body.dark .lesson-title,
 body.dark .progress-text,
 body.dark .island-subtitle,
 body.dark .island-recent-meta,
-body.dark .rp-energy-text,
-body.dark .rp-tips-list,
 body.dark .custom-modal-body { color: #AEB8AF; }
 body.dark .island-stat-label,
 body.dark .island-eyebrow,
 body.dark .island-chip,
-body.dark .rp-title,
 body.dark .tool-title strong,
 body.dark .dropdown-item,
 body.dark .filters input,
@@ -850,15 +759,12 @@ body.dark .dropdown-toggle { color: #F2F5F1; }
 body.dark .island-stat-note,
 body.dark .tool-title span,
 body.dark #importHint,
-body.dark .stats small,
-body.dark .rp-stats-grid small { color: #7F8A82; }
+body.dark .stats small { color: #7F8A82; }
 body.dark .island-stat-value,
-body.dark .rp-stats-grid span,
 body.dark .stats span { color: #F2F5F1; }
 body.dark .island-chip { background: #20272B; }
 body.dark .island-recent-item,
 body.dark .island-rank-item,
-body.dark .rp-stats-grid div { background: #20272B; border-color: #263036; }
 body.dark .island-card-teal,
 body.dark .island-card-yellow,
 body.dark .island-card-green,
@@ -979,7 +885,6 @@ body.dark .feedback-panel[data-state="bad"] .feedback-label {
   color: #FF5A5F;
 }
 body.dark .feedback-block p,
-body.dark .rp-mascot-line,
 body.dark .custom-modal-title { color: #F2F5F1; }
 body.dark .empty { background: #1A2024; border-color: #303A40; color: #AEB8AF; }
 body.dark .mobile-menu-btn { border-color: #58CC02; box-shadow: 0 4px 0 #2D3439; }
@@ -1118,8 +1023,7 @@ body.dark .admin-entry.active { background: #18351F; color: #7EE35B; border-colo
 .perf-lite { scroll-behavior: auto; }
 .perf-lite button,
 .perf-lite .bank-group-arrow,
-.perf-lite .progress-segments .seg-bar,
-.perf-lite .rp-energy-fill {
+.perf-lite .progress-segments .seg-bar {
   transition-duration: .12s !important;
 }
 .perf-lite .lesson-header,

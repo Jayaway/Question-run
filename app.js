@@ -351,11 +351,7 @@ function renderEmpty() {
 // 切到新题时让题卡淡入+轻微上滑；性能模式或无 GSAP 时跳过
 let lastShownId = null;
 function animateCardIn() {
-  const card = els.questionCard;
-  if (!card || PERFORMANCE_MODE || !window.gsap) return;
-  gsap.fromTo(card,
-    { opacity: 0, y: 18 },
-    { opacity: 1, y: 0, duration: 0.32, ease: "power2.out", clearProps: "opacity,transform" });
+  // GSAP 未加载，动画由 CSS transition 处理，此函数保留供将来扩展
 }
 
 function renderQuestion(q, list) {
@@ -478,16 +474,6 @@ function selectChoice(key) {
   clearAutoNext();
   rec.selected = key;
   checkCurrentAnswer();
-}
-
-function revealCurrent(forceCorrect) {
-  const list = filteredQuestions();
-  const q = list[app.index];
-  if (!q) return;
-  const rec = recordFor(q.id);
-  rec.revealed = true;
-  if (typeof forceCorrect === "boolean") rec.correct = forceCorrect;
-  render();
 }
 
 function checkCurrentAnswer() {
@@ -902,17 +888,12 @@ function pulseStreak() {
   const icon = document.getElementById("streakIcon");
   if (!count || !icon) return;
   count.textContent = getMoodWord(answeredCount);
-  if (PERFORMANCE_MODE || !window.gsap) {
-    icon.classList.remove("streak-pop");
-    count.classList.remove("streak-pop");
-    requestAnimationFrame(() => {
-      icon.classList.add("streak-pop");
-      count.classList.add("streak-pop");
-    });
-    return;
-  }
-  gsap.fromTo(icon, { scale: .8, rotate: -12 }, { scale: 1.15, rotate: 0, duration: .32, ease: "back.out(2)" });
-  gsap.fromTo(count, { scale: .9, color: "#ff9f1c" }, { scale: 1, color: "", duration: .42, ease: "power2.out" });
+  icon.classList.remove("streak-pop");
+  count.classList.remove("streak-pop");
+  requestAnimationFrame(() => {
+    icon.classList.add("streak-pop");
+    count.classList.add("streak-pop");
+  });
 }
 function launchConfetti() {
   const burst = document.createElement("div");
@@ -1003,62 +984,6 @@ function playMascotMoment(role, onComplete) {
   }, PERFORMANCE_MODE ? 900 : 1800);
 }
 
-function updateRightPanel() { return; // 右侧栏已移除
-  if (PERFORMANCE_MODE && window.matchMedia?.("(max-width: 1079px)")?.matches) return;
-  const rpDone = document.getElementById("rpDone");
-  const rpAccuracy = document.getElementById("rpAccuracy");
-  const rpStreak = document.getElementById("rpStreak");
-  const rpMarked = document.getElementById("rpMarked");
-  const rpEnergyFill = document.getElementById("rpEnergyFill");
-  const rpEnergyLeft = document.getElementById("rpEnergyLeft");
-  const rpMascotImg = document.getElementById("rpMascotImg");
-  const rpMascotLine = document.getElementById("rpMascotLine");
-  const rpTipsList = document.getElementById("rpTipsList");
-  if (!rpDone) return;
-
-  const done = questions.filter(q => { const r = app.records[q.id]; return r && (r.revealed || r.correct !== null); }).length;
-  const checked = Object.values(app.records).filter(r => r.correct !== null);
-  const correct = checked.filter(r => r.correct === true).length;
-  const accuracy = checked.length ? Math.round((correct / checked.length) * 100) : 0;
-  rpDone.textContent = done;
-  rpAccuracy.textContent = accuracy + "%";
-  rpStreak.textContent = app.streak || 0;
-  rpMarked.textContent = Object.keys(app.marked).length;
-
-  const progress = answeredCount % 15;
-  const left = progress === 0 ? 15 : 15 - progress;
-  rpEnergyFill.style.width = Math.round((progress / 15) * 100) + "%";
-  rpEnergyLeft.textContent = left;
-
-  const total = last15Results.length;
-  const recentCorrect = last15Results.filter(r => r.correct).length;
-  const recentAcc = total > 0 ? recentCorrect / total : 0.5;
-  let mascotRole = "boobo";
-  let mascotLine = "准备好了吗？开始刷题吧。";
-  if (total >= 3) {
-    if (recentAcc >= 0.85) { mascotRole = "gru"; mascotLine = MASCOT_CONFIG.gru.lines[Math.floor(Math.random() * MASCOT_CONFIG.gru.lines.length)]; }
-    else if (recentAcc >= 0.6) { mascotRole = "boobo"; mascotLine = MASCOT_CONFIG.boobo.lines[Math.floor(Math.random() * MASCOT_CONFIG.boobo.lines.length)]; }
-    else { mascotRole = "mimo"; mascotLine = MASCOT_CONFIG.mimo.lines[Math.floor(Math.random() * MASCOT_CONFIG.mimo.lines.length)]; }
-  }
-  rpMascotImg.src = document.body.classList.contains("dark") ? (MASCOT_CONFIG[mascotRole].darkImage || MASCOT_CONFIG[mascotRole].image) : MASCOT_CONFIG[mascotRole].image;
-  rpMascotLine.textContent = '"' + mascotLine + '"';
-
-  const wrongSections = {};
-  questions.forEach(q => {
-    const r = app.records[q.id];
-    if (r && (r.firstWrong || r.correct === false)) {
-      const keyword = q.section || "其他";
-      wrongSections[keyword] = (wrongSections[keyword] || 0) + 1;
-    }
-  });
-  const sorted = Object.entries(wrongSections).sort((a, b) => b[1] - a[1]).slice(0, 3);
-  if (sorted.length) {
-    rpTipsList.innerHTML = sorted.map(([k, v]) => `<li>${k}（${v}题）</li>`).join("");
-  } else {
-    rpTipsList.innerHTML = "<li>暂无错题，继续保持</li>";
-  }
-}
-
 initTheme(); initFilters(); renderBankPicker(); bindEvents(); render();
 
 Object.values(MASCOT_CONFIG).forEach(c => {
@@ -1076,6 +1001,7 @@ if (!PERFORMANCE_MODE) {
   new Image().src = "./assets/wrong-speechless.png";
 }
 
+// 每次渲染后自动保存状态
 const _origRender = render;
-render = function() { _origRender(); updateRightPanel(); saveState(); };
+render = function() { _origRender(); saveState(); };
 render();
