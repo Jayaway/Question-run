@@ -459,6 +459,7 @@ function selectChoice(key) {
   const rec = recordFor(q.id);
   // 已揭示的题目不允许再选；选错后（未揭示）允许再次选择
   if (rec.revealed) return;
+  clearAutoNext();
   rec.selected = key;
   checkCurrentAnswer();
 }
@@ -506,6 +507,9 @@ function checkCurrentAnswer() {
         const role = chooseCheckpointMascot(correct);
         playMascotMoment(role, correct ? () => nextQuestion() : null);
       }, correct ? 700 : 500);
+    } else if (correct) {
+      // 答对自动跳下一题（非弹窗时机）
+      autoNextTimer = setTimeout(() => nextQuestion(), 900);
     }
     return;
   }
@@ -529,6 +533,8 @@ function checkCurrentAnswer() {
       const role = chooseCheckpointMascot(rec.correct);
       playMascotMoment(role, rec.correct ? () => doGo(1) : null);
     }, rec.correct ? 700 : 500);
+  } else if (rec.correct) {
+    autoNextTimer = setTimeout(() => doGo(1), 900);
   }
 }
 

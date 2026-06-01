@@ -1123,7 +1123,7 @@ body.dark .admin-entry.active { background: #18351F; color: #7EE35B; border-colo
   display: none !important;
 }
 .perf-lite .question-card.correct-flash { animation: correct-pop-lite .28s ease-out; }
-.perf-lite .question-card.shake { animation: shake-lite .22s ease-out; }
+.perf-lite .question-card.shake { animation: shake-lite .45s cubic-bezier(.36,.07,.19,.97) both; }
 .perf-lite .streak-pop { animation-duration: .18s; }
 @keyframes correct-pop-lite {
   0% { transform: translateZ(0) scale(.995); }
@@ -1132,8 +1132,8 @@ body.dark .admin-entry.active { background: #18351F; color: #7EE35B; border-colo
 }
 @keyframes shake-lite {
   0%, 100% { transform: translateX(0); }
-  35% { transform: translateX(-4px); }
-  70% { transform: translateX(4px); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+  20%, 40%, 60%, 80% { transform: translateX(8px); }
 }
 .perf-lite .mascot-overlay,
 .perf-lite .mascot-img,
