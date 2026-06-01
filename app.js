@@ -448,7 +448,16 @@ function showFeedback(q, correct) {
   els.feedbackAnalysis.textContent = q.analysis || "";
   els.feedbackAnalysisBlock.style.display = hasAnalysis ? "grid" : "none";
 }
-function hideFeedback() { clearTimeout(_feedbackDelayTimer); els.feedbackPanel.dataset.state = "hidden"; }
+function hideFeedback() {
+  clearTimeout(_feedbackDelayTimer);
+  if (els.feedbackPanel.dataset.state === "hidden") return;
+  els.feedbackPanel.classList.add("pop-burst");
+  els.feedbackPanel.addEventListener("animationend", function h() {
+    els.feedbackPanel.removeEventListener("animationend", h);
+    els.feedbackPanel.classList.remove("pop-burst");
+    els.feedbackPanel.dataset.state = "hidden";
+  }, { once: true });
+}
 function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法填空":"算","问答题":"问","算法设计题":"设","算法设计与分析题":"设","单选题":"单","判断题":"判","分析题":"析","应用题":"用","综合题":"综","基础概念":"基","易错辨析":"易","应用提高":"高"}[q.section]||"题"; return `${p}${q.number}`; }
 function escapeHtml(t) { return String(t||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
 function escapeAttr(t) { return escapeHtml(t); }

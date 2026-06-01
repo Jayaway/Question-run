@@ -280,6 +280,12 @@ details[open] > .collapse-toggle::before { transform: rotate(90deg); }
 .feedback-panel[data-state="bad"] .feedback-label { color: var(--red-dark); }
 .feedback-block p { margin: 0; color: #3c3c3c; font-size: 15px; font-weight: 700; line-height: 1.6; white-space: pre-wrap; word-break: break-word; }
 @keyframes fb-in { from { opacity: 0; transform: translate(-50%,16px); } to { opacity: 1; transform: translate(-50%,0); } }
+.feedback-panel.pop-burst { animation: fb-pop-burst .35s ease-out forwards; pointer-events: none; }
+@keyframes fb-pop-burst {
+  0% { opacity: 1; transform: translate(-50%,0) scale(1); }
+  40% { opacity: 1; transform: translate(-50%,0) scale(1.08); }
+  100% { opacity: 0; transform: translate(-50%,0) scale(0.6); }
+}
 
 .confetti-burst { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; }
 .confetti-burst > span { position: absolute; top: -18px; left: var(--x); width: 8px; height: 14px; border-radius: 2px; background: var(--color); animation: confetti-drop 1.25s ease-out var(--delay) forwards; }
