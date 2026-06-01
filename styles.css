@@ -297,8 +297,8 @@ details[open] > .collapse-toggle::before { transform: rotate(90deg); }
 .confetti-burst { position: fixed; inset: 0; z-index: 90; pointer-events: none; overflow: hidden; }
 .confetti-burst > span { position: absolute; top: -18px; left: var(--x); width: 8px; height: 14px; border-radius: 2px; background: var(--color); animation: confetti-drop 1.25s ease-out var(--delay) forwards; }
 @keyframes confetti-drop { 0% { opacity: 0; transform: translate3d(0,-24px,0) rotate(0); } 18% { opacity: 1; } 100% { opacity: 0; transform: translate3d(var(--dx),78vh,0) rotate(var(--rot)); } }
-.confetti-lite > span { width: 6px; height: 10px; border-radius: 2px; animation: confetti-drop-lite 1s cubic-bezier(.2,.7,.35,1) var(--delay) forwards; will-change: transform, opacity; }
-@keyframes confetti-drop-lite { 0% { opacity: 0; transform: translate3d(0,-16px,0) rotate(0); } 16% { opacity: 1; } 100% { opacity: 0; transform: translate3d(var(--dx),78vh,0) rotate(var(--rot)); } }
+.confetti-lite > span { width: 6px; height: 10px; border-radius: 2px; animation: confetti-drop-lite 1.4s ease-out var(--delay) forwards; will-change: transform, opacity; }
+@keyframes confetti-drop-lite { 0% { opacity: 0; transform: translate3d(0,-16px,0) rotate(0); } 12% { opacity: 1; } 100% { opacity: 0; transform: translate3d(var(--dx),78vh,0) rotate(var(--rot)); } }
 
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
