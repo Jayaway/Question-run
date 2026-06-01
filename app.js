@@ -899,15 +899,17 @@ function launchConfetti() {
   const burst = document.createElement("div");
   const lite = PERFORMANCE_MODE;
   const colors = ["#58cc02", "#1cb0f6", "#ffc800", "#ff4b4b", "#7b61ff"];
-  const count = lite ? 14 : 30;
+  const count = lite ? 25 : 30;
   burst.className = lite ? "confetti-burst confetti-lite" : "confetti-burst";
   const frag = document.createDocumentFragment();
   for (let i = 0; i < count; i++) {
     const piece = document.createElement("span");
-    piece.style.setProperty("--x", `${Math.round(Math.random() * 100)}vw`);
-    piece.style.setProperty("--dx", `${Math.round((Math.random() - .5) * (lite ? 86 : 170))}px`);
-    piece.style.setProperty("--rot", `${Math.round((Math.random() - .5) * (lite ? 220 : 520))}deg`);
-    piece.style.setProperty("--delay", `${(Math.random() * (lite ? .08 : .18)).toFixed(2)}s`);
+    // 均匀分布在全屏宽度，避免扎堆
+    const x = lite ? ((i / count) * 100) : (Math.random() * 100);
+    piece.style.setProperty("--x", `${Math.round(x)}vw`);
+    piece.style.setProperty("--dx", `${Math.round((Math.random() - .5) * (lite ? 140 : 170))}px`);
+    piece.style.setProperty("--rot", `${Math.round((Math.random() - .5) * (lite ? 360 : 520))}deg`);
+    piece.style.setProperty("--delay", `${(Math.random() * (lite ? .12 : .18)).toFixed(2)}s`);
     piece.style.setProperty("--color", colors[i % colors.length]);
     frag.appendChild(piece);
   }
