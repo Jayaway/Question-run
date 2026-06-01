@@ -1,8 +1,27 @@
-const DEFAULT_BANK = window.QUESTION_BANK || { meta: {}, questions: [] };
-const STORAGE_KEY = "algorithm-review-quiz-v2";
-const BANK_STORAGE_KEY = "algorithm-review-quiz-bank-v1";
-let bank = loadQuestionBank();
+// ===== 题库注册表（内置 + 自定义导入） =====
+const CURRENT_BANK_KEY = "quiz-current-bank";
+const CUSTOM_BANKS_KEY = "quiz-custom-banks";
+const STATE_PREFIX = "quiz-state::";
+const LEGACY_STATE_KEY = "algorithm-review-quiz-v2";
+
+let groups = buildGroups();
+let currentBankId = pickInitialBankId();
+let bank = normalizeBankObj(bankById(currentBankId));
 let questions = bank.questions || [];
+let app = loadState(currentBankId);
+
+const openSubjects = new Set();
+{ const g0 = groupOfBank(currentBankId); if (g0) openSubjects.add(g0.subject); }
+
+const IS_IOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const IS_STANDALONE = Boolean(window.navigator.standalone) || window.matchMedia?.("(display-mode: standalone)")?.matches;
+const PERFORMANCE_MODE = Boolean(
+  IS_IOS ||
+  IS_STANDALONE ||
+  window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches ||
+  window.matchMedia?.("(max-width: 700px) and (pointer: coarse)")?.matches
+);
+document.documentElement.classList.toggle("perf-lite", PERFORMANCE_MODE);
 
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
@@ -52,7 +71,7 @@ const els = {
   searchInput: document.querySelector("#searchInput"),
   restartBtn: document.querySelector("#restartBtn"),
   importFile: document.querySelector("#importFile"),
-  restoreBankBtn: document.querySelector("#restoreBankBtn"),
+  bankPicker: document.querySelector("#bankPicker"),
   importHint: document.querySelector("#importHint"),
   mobileMenuBtn: document.querySelector("#mobileMenuBtn"),
   drawerOverlay: document.querySelector("#drawerOverlay"),
@@ -92,15 +111,48 @@ const els = {
   statMarked: document.querySelector("#statMarked")
 };
 
-function loadQuestionBank() {
-  try {
-    const s = localStorage.getItem(BANK_STORAGE_KEY);
-    if (!s) return normalizeQuestionBank(DEFAULT_BANK, "内置题库");
-    const parsed = normalizeQuestionBank(JSON.parse(s), "导入题库");
-    if (!parsed.questions.length) { localStorage.removeItem(BANK_STORAGE_KEY); return normalizeQuestionBank(DEFAULT_BANK, "内置题库"); }
-    return parsed;
+// 把注册表里的题库对象 {id,title,source,questions} 归一化为运行用的 {meta,questions}
+function normalizeBankObj(b) {
+  if (!b) return normalizeQuestionBank({}, "题库");
+  return normalizeQuestionBank({ meta: { title: b.title, source: b.source || b.title }, questions: b.questions }, b.title);
+}
+function loadCustomBanks() {
+  try { const a = JSON.parse(localStorage.getItem(CUSTOM_BANKS_KEY) || "[]"); return Array.isArray(a) ? a : []; }
+  catch { return []; }
+}
+function saveCustomBanks(list) { localStorage.setItem(CUSTOM_BANKS_KEY, JSON.stringify(list)); }
+// 组装科目分组：内置（操作系统等，来自 banks.js）+ 算法（来自 data.js）+ 我的导入
+function buildGroups() {
+  const g = [];
+  if (Array.isArray(window.QUIZ_BANKS)) {
+    window.QUIZ_BANKS.forEach(grp => g.push({ subject: grp.subject, builtin: true, banks: orderBanksForSubject(grp.subject, (grp.banks || []).map(b => ({ ...b }))) }));
   }
-  catch { localStorage.removeItem(BANK_STORAGE_KEY); return normalizeQuestionBank(DEFAULT_BANK, "内置题库"); }
+  if (window.QUESTION_BANK && Array.isArray(window.QUESTION_BANK.questions) && window.QUESTION_BANK.questions.length) {
+    g.push({ subject: "算法设计与分析", builtin: true, banks: [{
+      id: "algo",
+      title: window.QUESTION_BANK.meta?.title || "算法复习",
+      source: window.QUESTION_BANK.meta?.source || "算法设计与分析",
+      questions: window.QUESTION_BANK.questions
+    }] });
+  }
+  const custom = loadCustomBanks();
+  if (custom.length) g.push({ subject: "我的导入", builtin: false, banks: custom });
+  return g;
+}
+function orderBanksForSubject(subject, banks) {
+  if (subject !== "操作系统") return banks;
+  const review = banks.filter(b => b.id === "os-review" || b.title === "综合复习题库");
+  const rest = banks.filter(b => !(b.id === "os-review" || b.title === "综合复习题库"));
+  return [...rest, ...review];
+}
+function allBanks() { return groups.flatMap(g => g.banks); }
+function bankById(id) { return allBanks().find(b => b.id === id) || null; }
+function groupOfBank(id) { return groups.find(g => g.banks.some(b => b.id === id)) || null; }
+function pickInitialBankId() {
+  const saved = localStorage.getItem(CURRENT_BANK_KEY);
+  if (saved && bankById(saved)) return saved;
+  const first = allBanks()[0];
+  return first ? first.id : null;
 }
 function normalizeQuestionBank(input, fallbackTitle = "导入题库") {
   const raw = Array.isArray(input) ? { meta: { title: fallbackTitle }, questions: input } : input || {};
@@ -120,33 +172,93 @@ function normalizeQuestion(q, index) {
   if (type === "choice") { options = (Array.isArray(options) ? options : []).map((o, i) => ({ key: String(o.key || "ABCD"[i] || i+1), text: String(o.text||o.label||o.value||"") })).filter(o => o.text); if (!options.length) return null; }
   return { id: String(q.id || `${type}-${String(number).padStart(2,"0")}`), type, section, number, title: String(title), prompt: String(prompt), ...(options ? { options } : {}), answer: q.answer == null ? "" : String(q.answer), analysis: q.analysis || q.explanation || q.explain || "", ...(q.image ? { image: String(q.image) } : {}) };
 }
+// 切换到指定题库：保存当前进度 → 载入目标题库及其独立进度
+function selectBank(id) {
+  if (!id || !bankById(id)) return;
+  if (id === currentBankId) { closeDrawerOnMobile(); return; }
+  saveState();
+  currentBankId = id;
+  localStorage.setItem(CURRENT_BANK_KEY, id);
+  bank = normalizeBankObj(bankById(id));
+  questions = bank.questions || [];
+  app = loadState(id);
+  answeredCount = 0; last15Results = [];
+  const g = groupOfBank(id); if (g) openSubjects.add(g.subject);
+  closeAllDropdowns();
+  initFilters(); renderBankPicker(); render();
+  closeDrawerOnMobile();
+}
+
+// 导入的题库作为自定义题库追加并选中
 function importQuestionBank(input) {
   const nb = normalizeQuestionBank(input, "导入题库"); if (!nb.questions.length) throw new Error("没有找到有效题目");
-  bank = nb; questions = nb.questions; localStorage.setItem(BANK_STORAGE_KEY, JSON.stringify(nb));
-  app = { ...app, section: "全部题型", status: "all", query: "", index: 0, records: {}, marked: {}, streak: 0 };
-  initFilters(); render(); closeDrawerOnMobile(); if (els.importHint) els.importHint.textContent = `已导入 ${questions.length} 题`; return nb;
+  const custom = loadCustomBanks();
+  const id = "custom-" + Date.now().toString(36) + "-" + Math.floor(Math.random() * 1000);
+  custom.push({ id, title: nb.meta.title || "导入题库", source: nb.meta.source || nb.meta.title || "导入题库", questions: nb.questions });
+  saveCustomBanks(custom);
+  groups = buildGroups();
+  selectBank(id);
+  if (els.importHint) els.importHint.textContent = `已导入「${nb.meta.title}」· ${nb.questions.length} 题`;
+  return nb;
 }
-function restoreDefaultBank() {
+
+// 删除自定义题库（内置题库不可删）
+function deleteCustomBank(id) {
+  const b = bankById(id); if (!b) return;
   showModal({
-    type: "danger", icon: "⚠️", title: "恢复内置题库",
-    body: "这将清除当前已导入的题库，恢复为内置题库，所有刷题记录将被重置。是否继续？",
-    confirmText: "确认恢复", cancelText: "取消",
+    type: "danger", icon: "🗑", title: "删除题库",
+    body: `将删除导入的题库「${b.title}」及其刷题记录，是否继续？`,
+    confirmText: "删除", cancelText: "取消",
     onConfirm: () => {
-      localStorage.removeItem(BANK_STORAGE_KEY);
-      bank = normalizeQuestionBank(DEFAULT_BANK, "内置题库"); questions = bank.questions || [];
-      app = { ...app, section: "全部题型", status: "all", query: "", index: 0, records: {}, marked: {}, streak: 0 };
-      initFilters(); render(); closeDrawerOnMobile(); if (els.importHint) els.importHint.textContent = "已恢复内置题库";
+      saveCustomBanks(loadCustomBanks().filter(x => x.id !== id));
+      localStorage.removeItem(stateKey(id));
+      groups = buildGroups();
+      if (currentBankId === id) {
+        const firstId = allBanks()[0]?.id || null;
+        currentBankId = firstId;
+        if (firstId) localStorage.setItem(CURRENT_BANK_KEY, firstId);
+        bank = normalizeBankObj(bankById(firstId));
+        questions = bank.questions || [];
+        app = loadState(firstId);
+        answeredCount = 0; last15Results = [];
+      }
+      initFilters(); renderBankPicker(); render();
     }
   });
 }
+
+// 渲染左侧栏题库选择（按科目分组折叠）
+function renderBankPicker() {
+  const host = els.bankPicker;
+  if (!host) return;
+  host.innerHTML = groups.map(g => {
+    const open = openSubjects.has(g.subject);
+    const items = g.banks.map(b => {
+      const active = b.id === currentBankId;
+      const count = (b.questions || []).length;
+      const del = g.builtin ? "" : `<span class="bank-del" data-del="${escapeAttr(b.id)}" role="button" title="删除题库">✕</span>`;
+      return `<button class="bank-item${active ? " active" : ""}" type="button" data-bank="${escapeAttr(b.id)}"><span class="bank-item-title">${escapeHtml(b.title)}</span><span class="bank-count">${count}</span>${del}</button>`;
+    }).join("");
+    return `<div class="bank-group${open ? " open" : ""}" data-subject="${escapeAttr(g.subject)}">
+      <button class="bank-group-head" type="button"><span class="bank-group-name">${escapeHtml(g.subject)}</span><span class="bank-group-arrow">▾</span></button>
+      <div class="bank-group-body">${items}</div>
+    </div>`;
+  }).join("");
+}
 window.importQuestionBank = importQuestionBank;
 
-let app = loadState();
 let swipeStart = null;
 let autoNextTimer = 0;
 
-function loadState() { const f = { mode: "practice", section: "全部题型", status: "all", query: "", index: 0, records: {}, marked: {}, streak: 0 }; try { return { ...f, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}") }; } catch { return f; } }
-function saveState() { localStorage.setItem(STORAGE_KEY, JSON.stringify(app)); }
+function stateKey(id) { return STATE_PREFIX + id; }
+function loadState(id) {
+  const f = { mode: "practice", section: "全部题型", status: "all", query: "", index: 0, records: {}, marked: {}, streak: 0 };
+  if (!id) return f;
+  let raw = localStorage.getItem(stateKey(id));
+  if (!raw && id === "algo") { const legacy = localStorage.getItem(LEGACY_STATE_KEY); if (legacy) raw = legacy; }
+  try { return { ...f, ...JSON.parse(raw || "{}") }; } catch { return f; }
+}
+function saveState() { if (currentBankId) localStorage.setItem(stateKey(currentBankId), JSON.stringify(app)); }
 function recordFor(id) { if (!app.records[id]) app.records[id] = { attempts: 0, revealed: false, correct: null, mastered: null }; return app.records[id]; }
 
 function filteredQuestions() {
@@ -235,17 +347,36 @@ function renderEmpty() {
   els.questionNav.innerHTML = `<div class="empty">当前筛选下没有题目。</div>`;
 }
 
+// 切到新题时让题卡淡入+轻微上滑；性能模式或无 GSAP 时跳过
+let lastShownId = null;
+function animateCardIn() {
+  const card = els.questionCard;
+  if (!card || PERFORMANCE_MODE || !window.gsap) return;
+  gsap.fromTo(card,
+    { opacity: 0, y: 18 },
+    { opacity: 1, y: 0, duration: 0.32, ease: "power2.out", clearProps: "opacity,transform" });
+}
+
 function renderQuestion(q, list) {
   const rec = recordFor(q.id), reveal = app.mode === "memorize" || rec.revealed;
+  const showResult = reveal || rec.correct === false; // 选错后也显示对错高亮
   els.typeBadge.textContent = q.section; els.progressText.textContent = `${app.index + 1} / ${list.length}`;
   els.questionTitle.textContent = q.title; els.questionPrompt.textContent = q.prompt || q.title;
   els.markBtn.classList.toggle("active", Boolean(app.marked[q.id]));
   els.markBtn.setAttribute("aria-pressed", String(Boolean(app.marked[q.id])));
-  els.markIcon.textContent = app.marked[q.id] ? "★" : "☆";
+  els.markIcon.innerHTML = app.marked[q.id]
+    ? `<img src="./assets/star.png" class="mark-star-img active" alt="">`
+    : `<img src="./assets/star.png" class="mark-star-img" alt="">`;
   els.prevBtn.disabled = app.index === 0; els.nextBtn.disabled = app.index === list.length - 1;
   els.primaryBtn.disabled = false;
-  els.primaryBtn.dataset.state = reveal ? "next" : "check";
-  els.primaryBtn.textContent = reveal ? "下一题" : (app.mode === "memorize" ? "显示答案" : "检查答案");
+  const canProceed = reveal || rec.correct === false;
+  els.primaryBtn.dataset.state = canProceed ? "next" : "check";
+  if (q.type === "choice" && !canProceed && app.mode !== "memorize") {
+    els.primaryBtn.disabled = true;
+    els.primaryBtn.textContent = "请选择答案";
+  } else {
+    els.primaryBtn.textContent = canProceed ? "下一题" : (app.mode === "memorize" ? "显示答案" : "检查答案");
+  }
 
   if (q.image) {
     els.questionImage.src = q.image;
@@ -263,12 +394,13 @@ function renderQuestion(q, list) {
     els.choiceArea.innerHTML = q.options.map(opt => {
       let cls = "option-btn";
       let mark = "";
-      if (reveal) {
+      if (showResult) {
         const selected = rec.selected === opt.key;
         const isCorrect = normalizeAnswer(opt.key) === normalizeAnswer(q.answer);
-        if (isCorrect) { cls += " correct"; mark = "✓"; }
-        else if (selected) { cls += " wrong"; mark = "✕"; }
+        if (isCorrect) { cls += " correct"; mark = `<img src="./assets/check-mark.png" class="option-mark-img" alt="">`; }
+        else if (selected) { cls += " wrong"; mark = `<img src="./assets/x-mark.png" class="option-mark-img" alt="">`; }
       }
+      // 已揭示（正确/点下一题/重选正确）后禁用选项
       return `<button class="${cls}" type="button" data-key="${escapeAttr(opt.key)}" ${reveal ? "disabled" : ""}><span class="option-key">${escapeHtml(opt.key)}</span><span>${escapeHtml(opt.text)}</span><span class="option-mark">${mark}</span></button>`;
     }).join("");
   } else if (q.type === "fill" || q.type === "code") {
@@ -281,8 +413,10 @@ function renderQuestion(q, list) {
     els.memoryInput.disabled = reveal;
   }
 
-  if (reveal) showFeedback(q, rec.correct !== false);
+  if (reveal || rec.correct === false) showFeedback(q, rec.correct !== false);
   else hideFeedback();
+
+  if (q.id !== lastShownId) { lastShownId = q.id; animateCardIn(); }
 }
 
 function normalizeAnswer(v) { return String(v ?? "").trim().replace(/\s+/g, " ").toLowerCase(); }
@@ -295,7 +429,12 @@ function checkFillAnswer(input, answer) {
 }
 function showFeedback(q, correct) {
   els.feedbackPanel.dataset.state = correct ? "ok" : "bad";
-  els.feedbackIcon.textContent = correct ? "✓" : "✕";
+  if (correct) {
+    const imgs = ["./assets/correct-sunglasses.png", "./assets/correct-glow.png", "./assets/correct-celebrate.png"];
+    els.feedbackIcon.innerHTML = `<img src="${imgs[Math.floor(Math.random() * 3)]}" class="feedback-icon-img" alt="">`;
+  } else {
+    els.feedbackIcon.innerHTML = `<img src="./assets/wrong-speechless.png" class="feedback-icon-img" alt="">`;
+  }
   els.feedbackTitle.textContent = correct ? "回答正确" : "回答错误";
   els.feedbackAnswer.textContent = q.answer || "无";
   const hasAnalysis = Boolean(String(q.analysis || "").trim());
@@ -303,7 +442,7 @@ function showFeedback(q, correct) {
   els.feedbackAnalysisBlock.style.display = hasAnalysis ? "grid" : "none";
 }
 function hideFeedback() { els.feedbackPanel.dataset.state = "hidden"; }
-function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法填空":"算","问答题":"问","算法设计题":"设","算法设计与分析题":"设"}[q.section]||"题"; return `${p}${q.number}`; }
+function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法填空":"算","问答题":"问","算法设计题":"设","算法设计与分析题":"设","单选题":"单","判断题":"判","分析题":"析","应用题":"用","综合题":"综","基础概念":"基","易错辨析":"易","应用提高":"高"}[q.section]||"题"; return `${p}${q.number}`; }
 function escapeHtml(t) { return String(t||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
 function escapeAttr(t) { return escapeHtml(t); }
 
@@ -318,8 +457,10 @@ function selectChoice(key) {
   const q = list[app.index];
   if (!q) return;
   const rec = recordFor(q.id);
+  // 已揭示的题目不允许再选；选错后（未揭示）允许再次选择
+  if (rec.revealed) return;
   rec.selected = key;
-  renderQuestion(q, list);
+  checkCurrentAnswer();
 }
 
 function revealCurrent(forceCorrect) {
@@ -339,27 +480,32 @@ function checkCurrentAnswer() {
   const rec = recordFor(q.id);
   if (q.type === "choice") {
     if (!rec.selected) return;
-    const isFirstAnswer = rec.correct === null && rec.revealed !== true;
+    const isFirstAttempt = rec.correct === null;
     const correct = normalizeAnswer(rec.selected) === normalizeAnswer(q.answer);
-    rec.correct = correct;
-    rec.revealed = true;
-    rec.attempts = (rec.attempts || 0) + 1;
-    if (!correct && rec.firstWrong == null) rec.firstWrong = true;
-    if (correct) { app.streak = (app.streak || 0) + 1; playCorrectSound(); }
-    else { app.streak = 0; playWrongSound(); }
-    recordAnswer(correct);
-    render();
+
+    if (isFirstAttempt) {
+      rec.correct = correct;
+      rec.attempts = (rec.attempts || 0) + 1;
+      if (!correct && rec.firstWrong == null) rec.firstWrong = true;
+      if (correct) { app.streak = (app.streak || 0) + 1; playCorrectSound(); }
+      else { app.streak = 0; playWrongSound(); }
+      recordAnswer(correct);
+    }
+
     if (correct) {
-      pulseStreak();
-      flashCorrect();
+      rec.revealed = true;
+      if (isFirstAttempt) { pulseStreak(); flashCorrect(); }
+      else { playCorrectSound(); flashCorrect(); }
     } else {
       shakeWrong();
     }
-    if (isFirstAnswer && answeredCount % 10 === 0) {
-      const role = chooseCheckpointMascot(correct);
-      if (correct) {
-        setTimeout(() => playMascotMoment(role, () => nextQuestion()), 700);
-      }
+
+    render();
+    if (isFirstAttempt && answeredCount % 10 === 0) {
+      setTimeout(() => {
+        const role = chooseCheckpointMascot(correct);
+        playMascotMoment(role, correct ? () => nextQuestion() : null);
+      }, correct ? 700 : 500);
     }
     return;
   }
@@ -379,8 +525,10 @@ function checkCurrentAnswer() {
   if (correct) { pulseStreak(); flashCorrect(); }
   else { shakeWrong(); }
   if (answeredCount % 10 === 0) {
-    const role = chooseCheckpointMascot(rec.correct);
-    if (rec.correct) { setTimeout(() => playMascotMoment(role, () => doGo(1)), 700); }
+    setTimeout(() => {
+      const role = chooseCheckpointMascot(rec.correct);
+      playMascotMoment(role, rec.correct ? () => doGo(1) : null);
+    }, rec.correct ? 700 : 500);
   }
 }
 
@@ -389,10 +537,14 @@ function handlePrimaryAction() {
   const q = list[app.index];
   if (!q) return;
   const rec = recordFor(q.id);
-  if (rec.revealed || app.mode === "memorize" && els.primaryBtn.dataset.state === "next") {
+  const canProceed = rec.revealed || rec.correct === false;
+  if (canProceed || app.mode === "memorize" && els.primaryBtn.dataset.state === "next") {
+    // 选错后点下一题时标记为已揭示，方便下次回顾
+    if (!rec.revealed && rec.correct === false) rec.revealed = true;
     nextQuestion();
     return;
   }
+  if (q.type === "choice") return;
   if (app.mode === "memorize") {
     rec.revealed = true;
     rec.mastered = true;
@@ -428,7 +580,7 @@ function showModal({ type = "default", icon = "", title = "提示", body = "", c
   overlay.className = "custom-modal-overlay";
   overlay.innerHTML = `
     <div class="custom-modal ${type === "danger" ? "danger" : ""}">
-      <div class="custom-modal-icon">${escapeHtml(icon)}</div>
+      <div class="custom-modal-icon">${icon}</div>
       <h3 class="custom-modal-title">${escapeHtml(title)}</h3>
       <p class="custom-modal-body">${escapeHtml(body)}</p>
       <div class="custom-modal-actions">
@@ -475,7 +627,7 @@ function updateThemeAssets() {
     if (img) img.src = document.body.classList.contains("dark") ? "./assets/moon.png" : "./assets/sun2.png";
   }
   const meta = document.querySelector("#themeColorMeta");
-  if (meta) meta.content = document.body.classList.contains("dark") ? "#2a2255" : "#7B61FF";
+  if (meta) meta.content = document.body.classList.contains("dark") ? "#101314" : "#f8fbf5";
 }
 
 function bindEvents() {
@@ -507,8 +659,18 @@ function bindEvents() {
     closeAllDropdowns();
   });
   els.searchInput?.addEventListener("input", e => { app.query = e.target.value || ""; app.index = 0; render(); });
-  els.restartBtn?.addEventListener("click", () => showModal({ title: "重新刷题", body: "这会清空当前刷题记录和收藏，是否继续？", confirmText: "确认重置", cancelText: "取消", onConfirm: resetRecords }));
-  els.restoreBankBtn?.addEventListener("click", restoreDefaultBank);
+  els.restartBtn?.addEventListener("click", () => showModal({ icon: `<img src="./assets/question-icon.png" class="modal-icon-img" alt="">`, title: "重新刷题", body: "这会清空当前题库的刷题记录和收藏，是否继续？", confirmText: "确认重置", cancelText: "取消", onConfirm: resetRecords }));
+  els.bankPicker?.addEventListener("click", e => {
+    const del = e.target.closest(".bank-del");
+    if (del) { e.stopPropagation(); deleteCustomBank(del.dataset.del); return; }
+    const item = e.target.closest(".bank-item");
+    if (item) { selectBank(item.dataset.bank); return; }
+    const head = e.target.closest(".bank-group-head");
+    if (head) {
+      const subject = head.parentElement?.dataset.subject;
+      if (subject) { openSubjects.has(subject) ? openSubjects.delete(subject) : openSubjects.add(subject); renderBankPicker(); }
+    }
+  });
   els.importFile?.addEventListener("change", async e => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -589,49 +751,189 @@ const MASCOT_CONFIG = {
   boobo: {
     image: "./assets/boobo-front.webp",
     darkImage: "./assets/boobo-dark.webp",
-    lines: ["稳住节奏，一题一题来。", "做得不错，继续推进。", "这题拿下，状态在线。"]
+    lines: [
+      "满分节奏！你是我的神！",        // ≥90%
+      "太强了，继续保持这个手感。",      // ≥80%
+      "做得不错，稳稳推进中。",         // ≥70%
+      "还可以，再专注一点更好。",       // ≥60%
+      "有点磕绊，但方向是对的。",       // ≥40%
+      "错得有点多，慢下来看看题。",     // ≥20%
+      "稳住…先看清题目再说。"           // <20%
+    ],
+    darkLines: [
+      "哟，居然全对？肯定是题太简单。",
+      "运气不错嘛，下次可没这好运。",
+      "还行吧，也就那样。",
+      "勉勉强强，别太得意。",
+      "我就知道你要错，果然没错。",
+      "你这水平…是不是该回去翻书了？",
+      "天哪，你是闭着眼睛在选吗？"
+    ]
   },
   gru: {
     image: "./assets/gru-front.webp",
     darkImage: "./assets/gru-dark.webp",
-    lines: ["漂亮，这波节奏拉满。", "继续冲，已经很强了。", "这题很稳，保持手感。"]
+    lines: [
+      "无敌！这就是王者的实力！",
+      "漂亮，这波节奏拉满了。",
+      "继续冲，已经很强了。",
+      "这题很稳，手感在线。",
+      "还行，再调整一下会更顺。",
+      "有点飘了，先稳住再说。",
+      "别冲太快，基础先打牢。"
+    ],
+    darkLines: [
+      "蒙的全对？我不信。",
+      "哟，这次运气好，别嘚瑟。",
+      "也就那样吧，没什么好吹的。",
+      "对是对了，但速度也太慢了。",
+      "开始掉链子了吧，意料之中。",
+      "我就静静看着你错。",
+      "喂，你是来刷题还是来刷存在感的？"
+    ]
   },
   mimo: {
     image: "./assets/mimo-front.webp",
     darkImage: "./assets/mimo-dark.webp",
-    lines: ["别急，慢一点更容易做对。", "卡住也没事，先看清题意。", "一步一步来，你可以的。"]
+    lines: [
+      "全对！今天状态爆棚！",
+      "很好，一步一步都在掌控中。",
+      "别急，慢一点更容易做对。",
+      "卡住也没事，先看清题意。",
+      "深呼吸，你可以的。",
+      "错多了别慌，调整节奏。",
+      "从基础开始，重新来过也不丢人。"
+    ],
+    darkLines: [
+      "哦，全对？太阳打西边出来了。",
+      "别高兴太早，下一题就翻车。",
+      "急什么急，又错了是不是？",
+      "看看题目再选，别瞎点。",
+      "你这正确率…我都不忍心看了。",
+      "是不是该考虑换个题库？",
+      "放弃吧，今天不适合刷题。"
+    ]
   },
   waiwai: {
     image: "./assets/waiwai-front.webp",
     darkImage: "./assets/waiwai-dark.webp",
-    lines: ["先别慌，回到条件本身。", "错一道不影响后面发挥。", "想清楚再出手，节奏会回来。"]
+    lines: [
+      "不可思议！满分通过！",
+      "想清楚再出手，节奏很好。",
+      "先别慌，回到条件本身。",
+      "错一道不影响后面发挥。",
+      "思路是对的，执行再稳一点。",
+      "出错是好事，知道哪里薄弱了。",
+      "别怕错，每个错题都是机会。"
+    ],
+    darkLines: [
+      "全对？是不是偷看答案了？",
+      "这次算你走运，下次等着。",
+      "又错了？意料之中。",
+      "你这水平，还是背题吧。",
+      "我都不想说话了，自己看。",
+      "你是我带过最差的一届。",
+      "算了，当我没来过。"
+    ]
   },
   dodo: {
     image: "./assets/dodo-front.webp",
     darkImage: "./assets/dodo-dark.webp",
-    lines: ["继续加油，下一题争取更稳。", "状态在慢慢起来，别停。", "保持专注，马上就顺了。"]
+    lines: [
+      "起飞！状态前所未有的好！",
+      "继续加油，手感越来越好了。",
+      "状态在慢慢起来，别停。",
+      "保持专注，马上就顺了。",
+      "稍微有点卡，但进步很明显。",
+      "跌倒了爬起来，没什么大不了。",
+      "慢慢来，每一步都算数。"
+    ],
+    darkLines: [
+      "全对？看来题目难度该调高了。",
+      "就这？我上我也行。",
+      "加油？加什么油，加错吧。",
+      "你这状态…没救了。",
+      "再错下去要破纪录了，反向纪录。",
+      "我劝你换个爱好吧。",
+      "刷题救不了你，放弃吧。"
+    ]
   }
 };
+
+// 根据最近10题正确率选语料索引（0=最好 → 6=最差）
+function pickLineIndex() {
+  const total = last15Results.length;
+  if (total === 0) return 3; // 没有数据时用中间档
+  const correctCount = last15Results.filter(r => r.correct).length;
+  const accuracy = correctCount / total;
+  if (accuracy >= 0.90) return 0;
+  if (accuracy >= 0.80) return 1;
+  if (accuracy >= 0.70) return 2;
+  if (accuracy >= 0.60) return 3;
+  if (accuracy >= 0.40) return 4;
+  if (accuracy >= 0.20) return 5;
+  return 6;
+}
 
 function pulseStreak() {
   const count = els.streakCount;
   const icon = document.getElementById("streakIcon");
-  if (!count || !icon || !window.gsap) return;
+  if (!count || !icon) return;
   count.textContent = getMoodWord(answeredCount);
+  if (PERFORMANCE_MODE || !window.gsap) {
+    icon.classList.remove("streak-pop");
+    count.classList.remove("streak-pop");
+    requestAnimationFrame(() => {
+      icon.classList.add("streak-pop");
+      count.classList.add("streak-pop");
+    });
+    return;
+  }
   gsap.fromTo(icon, { scale: .8, rotate: -12 }, { scale: 1.15, rotate: 0, duration: .32, ease: "back.out(2)" });
   gsap.fromTo(count, { scale: .9, color: "#ff9f1c" }, { scale: 1, color: "", duration: .42, ease: "power2.out" });
 }
+function launchConfetti() {
+  const burst = document.createElement("div");
+  const lite = PERFORMANCE_MODE;
+  const colors = ["#58cc02", "#1cb0f6", "#ffc800", "#ff4b4b", "#7b61ff"];
+  const count = lite ? 14 : 30;
+  burst.className = lite ? "confetti-burst confetti-lite" : "confetti-burst";
+  const frag = document.createDocumentFragment();
+  for (let i = 0; i < count; i++) {
+    const piece = document.createElement("span");
+    piece.style.setProperty("--x", `${Math.round(Math.random() * 100)}vw`);
+    piece.style.setProperty("--dx", `${Math.round((Math.random() - .5) * (lite ? 86 : 170))}px`);
+    piece.style.setProperty("--rot", `${Math.round((Math.random() - .5) * (lite ? 220 : 520))}deg`);
+    piece.style.setProperty("--delay", `${(Math.random() * (lite ? .08 : .18)).toFixed(2)}s`);
+    piece.style.setProperty("--color", colors[i % colors.length]);
+    frag.appendChild(piece);
+  }
+  burst.appendChild(frag);
+  document.body.appendChild(burst);
+  setTimeout(() => burst.remove(), lite ? 900 : 1500);
+}
 function flashCorrect() {
   els.questionCard?.classList.remove("wrong-border", "shake");
+  launchConfetti();
   els.questionCard?.classList.add("correct-flash", "correct-border");
-  setTimeout(() => els.questionCard?.classList.remove("correct-flash", "correct-border"), 620);
+  setTimeout(() => els.questionCard?.classList.remove("correct-flash", "correct-border"), PERFORMANCE_MODE ? 420 : 620);
 }
 function shakeWrong() {
   els.questionCard?.classList.remove("correct-flash", "correct-border");
   els.questionCard?.classList.add("shake", "wrong-border");
-  setTimeout(() => els.questionCard?.classList.remove("shake", "wrong-border"), 560);
+  setTimeout(() => els.questionCard?.classList.remove("shake", "wrong-border"), PERFORMANCE_MODE ? 320 : 560);
 }
-function addOptionRipple(btn) { btn.style.setProperty("--cx","50%"); btn.style.setProperty("--cy","50%"); btn.classList.add("ripple"); setTimeout(()=>btn.classList.remove("ripple"), 400); }
+function addOptionRipple(btn) {
+  if (PERFORMANCE_MODE) {
+    btn.classList.add("tap-pop");
+    setTimeout(() => btn.classList.remove("tap-pop"), 180);
+    return;
+  }
+  btn.style.setProperty("--cx","50%");
+  btn.style.setProperty("--cy","50%");
+  btn.classList.add("ripple");
+  setTimeout(()=>btn.classList.remove("ripple"), 400);
+}
 function recordAnswer(isCorrect) { last15Results.push({ correct: isCorrect }); if (last15Results.length > 15) last15Results.shift(); answeredCount++; }
 function chooseCheckpointMascot(isCorrect) {
   const total = last15Results.length, correctCount = last15Results.filter(r => r.correct).length;
@@ -642,7 +944,7 @@ function chooseCheckpointMascot(isCorrect) {
 }
 function createMascotParticles(role) {
   const container = document.getElementById("mascotParticles");
-  if (!container) return;
+  if (!container || PERFORMANCE_MODE) return;
   container.innerHTML = "";
   const count = role === "waiwai" ? 8 : 10;
   for (let i = 0; i < count; i++) {
@@ -662,9 +964,11 @@ function playMascotMoment(role, onComplete) {
   const bubble = document.getElementById("mascotBubble");
   if (!overlay || !img || !bubble) { if (typeof onComplete === "function") onComplete(); return; }
   const cfg = MASCOT_CONFIG[role] || MASCOT_CONFIG.boobo;
+  const isDark = document.body.classList.contains("dark");
   overlay.className = `mascot-overlay show role-${role}`;
-  img.src = document.body.classList.contains("dark") ? (cfg.darkImage || cfg.image) : cfg.image;
-  bubble.textContent = cfg.lines[Math.floor(Math.random() * cfg.lines.length)];
+  img.src = isDark ? (cfg.darkImage || cfg.image) : cfg.image;
+  const lines = (isDark && cfg.darkLines) ? cfg.darkLines : cfg.lines;
+  bubble.textContent = lines[pickLineIndex()];
   createMascotParticles(role);
   clearTimeout(pendingMascot);
   pendingMascot = setTimeout(() => {
@@ -673,11 +977,12 @@ function playMascotMoment(role, onComplete) {
       overlay.className = "mascot-overlay";
       overlay.classList.remove("hide");
       if (typeof onComplete === "function") onComplete();
-    }, 260);
-  }, 1800);
+    }, PERFORMANCE_MODE ? 120 : 260);
+  }, PERFORMANCE_MODE ? 900 : 1800);
 }
 
-function updateRightPanel() {
+function updateRightPanel() { return; // 右侧栏已移除
+  if (PERFORMANCE_MODE && window.matchMedia?.("(max-width: 1079px)")?.matches) return;
   const rpDone = document.getElementById("rpDone");
   const rpAccuracy = document.getElementById("rpAccuracy");
   const rpStreak = document.getElementById("rpStreak");
@@ -732,12 +1037,22 @@ function updateRightPanel() {
   }
 }
 
-initTheme(); initFilters(); bindEvents(); render();
+initTheme(); initFilters(); renderBankPicker(); bindEvents(); render();
 
 Object.values(MASCOT_CONFIG).forEach(c => {
+  if (PERFORMANCE_MODE) return;
   const i1 = new Image(); i1.src = c.image;
   if (c.darkImage) { const i2 = new Image(); i2.src = c.darkImage; }
 });
+// Preload feedback icon + option mark images
+if (!PERFORMANCE_MODE) {
+  new Image().src = "./assets/check-mark.png";
+  new Image().src = "./assets/x-mark.png";
+  new Image().src = "./assets/correct-sunglasses.png";
+  new Image().src = "./assets/correct-glow.png";
+  new Image().src = "./assets/correct-celebrate.png";
+  new Image().src = "./assets/wrong-speechless.png";
+}
 
 const _origRender = render;
 render = function() { _origRender(); updateRightPanel(); saveState(); };
