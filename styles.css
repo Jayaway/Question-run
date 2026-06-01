@@ -56,7 +56,7 @@ button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-
 .app-shell { min-height: 100vh; display: grid; grid-template-columns: 1fr; }
 .right-panel { display: none !important; }
 
-.sidebar { position: fixed; top: 0; left: 0; z-index: 30; width: min(86vw,320px); height: 100vh; padding: 60px 18px 20px; overflow: auto; background: #7B61FF; border-right: 3px solid #5a45cc; box-shadow: 14px 0 34px rgba(0,0,0,.15); transform: translateX(-105%); transition: transform .26s ease; }
+.sidebar { position: fixed; top: 0; left: 0; z-index: 30; width: min(86vw,320px); height: 100vh; padding: 60px 18px 80px; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; background: #7B61FF; border-right: 3px solid #5a45cc; box-shadow: 14px 0 34px rgba(0,0,0,.15); transform: translateX(-105%); transition: transform .26s ease; }
 body.drawer-open .sidebar { transform: translateX(0); }
 
 .mobile-menu-btn { position: fixed; top: 12px; left: 12px; z-index: 100; display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 44px; height: 44px; border: 2px solid var(--green); border-radius: 12px; background: #fff; box-shadow: 0 4px 0 #d0d0d0; transition: transform .08s, box-shadow .08s; }
@@ -996,10 +996,12 @@ body.dark .admin-entry.active { background: #18351F; color: #7EE35B; border-colo
   .drawer-overlay { background: rgba(27,24,40,.34); }
   .sidebar {
     width: min(var(--mobile-content), calc(100vw - 32px));
-    padding: calc(56px + env(safe-area-inset-top)) 16px calc(20px + env(safe-area-inset-bottom));
+    padding: calc(56px + env(safe-area-inset-top)) 16px calc(80px + env(safe-area-inset-bottom));
     border-right: 0;
     border-radius: 0 16px 16px 0;
     box-shadow: 10px 0 24px rgba(34,28,68,.18);
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
   .brand h1 { font-size: 24px; font-weight: 600; line-height: 1.25; }
   .brand p { font-size: 12px; font-weight: 400; }
