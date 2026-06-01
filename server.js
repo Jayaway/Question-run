@@ -2,10 +2,12 @@ const http = require("http");
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
+const crypto = require("crypto");
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3000;
 const DATA_FILE = path.join(__dirname, "visit-data.json");
-const ADMIN_PASSWORD = "admin888";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "6666";
+const adminTokens = new Set();
 
 function loadData() {
   try { return JSON.parse(fs.readFileSync(DATA_FILE, "utf8")); }
@@ -107,6 +109,29 @@ const server = http.createServer((req, res) => {
 
   if (req.method === "OPTIONS") { res.writeHead(204); res.end(); return; }
 
+  if (req.method === "POST" && req.url === "/api/login") {
+    let body = "";
+    req.on("data", c => body += c);
+    req.on("end", () => {
+      try {
+        const { password } = JSON.parse(body || "{}");
+        if (password !== ADMIN_PASSWORD) {
+          res.writeHead(401, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: false }));
+          return;
+        }
+        const token = crypto.randomBytes(24).toString("hex");
+        adminTokens.add(token);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true, token }));
+      } catch (e) {
+        res.writeHead(400, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
   if (req.method === "POST" && req.url === "/api/track") {
     let body = "";
     req.on("data", c => body += c);
@@ -136,14 +161,34 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === "GET" && req.url === "/api/stats") {
+    const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    if (!adminTokens.has(token)) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
     const data = loadData();
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(getStats(data.visits)));
     return;
   }
 
-  let filePath = "." + (req.url === "/" ? "/index.html" : req.url.split("?")[0]);
-  filePath = path.join(__dirname, path.normalize(filePath));
+  let pathname = req.url === "/" ? "/index.html" : req.url.split("?")[0];
+  try { pathname = decodeURIComponent(pathname); }
+  catch { pathname = "/index.html"; }
+  pathname = path.posix.normalize(pathname);
+  const publicFiles = new Set(["/index.html", "/admin.html", "/styles.css", "/app.js", "/data.js", "/banks.js"]);
+  if (!publicFiles.has(pathname) && !pathname.startsWith("/assets/")) {
+    res.writeHead(404);
+    res.end("Not Found");
+    return;
+  }
+  const filePath = path.resolve(__dirname, "." + pathname);
+  if (!filePath.startsWith(__dirname + path.sep)) {
+    res.writeHead(403);
+    res.end("Forbidden");
+    return;
+  }
   const ext = path.extname(filePath).toLowerCase();
   if (MIME[ext]) {
     fs.readFile(filePath, (err, data) => {
