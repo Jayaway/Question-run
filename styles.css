@@ -238,6 +238,14 @@ details[open] > .collapse-toggle::before { transform: rotate(90deg); }
 .option-key { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 10px; border: 2px solid var(--line); color: #afafaf; font-weight: 900; font-size: 14px; background: #fff; }
 .option-mark { width: 24px; height: 24px; display: inline-grid; place-items: center; font-size: 16px; font-weight: 900; color: transparent; }
 .option-mark-img { width: 24px; height: 24px; object-fit: contain; display: block; }
+.option-btn.correct .option-mark-img,
+.option-btn.wrong .option-mark-img {
+  animation: mark-pop-in .35s cubic-bezier(.34,1.56,.64,1) .15s both;
+}
+@keyframes mark-pop-in {
+  0% { opacity: 0; transform: scale(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
 .option-btn.correct { border-color: #97d5fa; background: #e1f3fd; color: #1a8dc9; box-shadow: 0 4px 0 #7bc5ee; }
 .option-btn.correct .option-key { border-color: #97d5fa; background: #97d5fa; color: #fff; }
 .option-btn.correct .option-mark { color: #1a8dc9; }
