@@ -665,20 +665,7 @@ function bindEvents() {
     closeAllDropdowns();
   });
   els.searchInput?.addEventListener("input", e => { app.query = e.target.value || ""; app.index = 0; render(); });
-  // 重新刷题：连点4下进入后台
-  let restartClickCount = 0;
-  let restartClickTimer = 0;
-  els.restartBtn?.addEventListener("click", () => {
-    restartClickCount++;
-    clearTimeout(restartClickTimer);
-    if (restartClickCount >= 4) {
-      restartClickCount = 0;
-      window.location.href = "./admin.html";
-      return;
-    }
-    restartClickTimer = setTimeout(() => { restartClickCount = 0; }, 1500);
-    showModal({ icon: `<img src="./assets/question-icon.png" class="modal-icon-img" alt="">`, title: "重新刷题", body: "这会清空当前题库的刷题记录和收藏，是否继续？", confirmText: "确认重置", cancelText: "取消", onConfirm: resetRecords });
-  });
+  els.restartBtn?.addEventListener("click", () => showModal({ icon: `<img src="./assets/question-icon.png" class="modal-icon-img" alt="">`, title: "重新刷题", body: "这会清空当前题库的刷题记录和收藏，是否继续？", confirmText: "确认重置", cancelText: "取消", onConfirm: resetRecords }));
   els.bankPicker?.addEventListener("click", e => {
     const del = e.target.closest(".bank-del");
     if (del) { e.stopPropagation(); deleteCustomBank(del.dataset.del); return; }
