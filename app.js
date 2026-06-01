@@ -414,12 +414,10 @@ function renderQuestion(q, list) {
     els.memoryInput.disabled = reveal;
   }
 
-  if (reveal) {
-    showFeedback(q, rec.correct !== false);
-  } else if (rec.correct === false) {
-    // 选错后延迟展示解析，避免挡住选项
+  if (reveal || rec.correct === false) {
+    // 答对/答错都延迟展示解析，避免挡住选项
     clearTimeout(_feedbackDelayTimer);
-    _feedbackDelayTimer = setTimeout(() => showFeedback(q, false), 650);
+    _feedbackDelayTimer = setTimeout(() => showFeedback(q, rec.correct !== false), 650);
   } else {
     hideFeedback();
     clearTimeout(_feedbackDelayTimer);
@@ -518,7 +516,7 @@ function checkCurrentAnswer() {
       }, correct ? 700 : 500);
     } else if (correct) {
       // 答对自动跳下一题（非弹窗时机）
-      autoNextTimer = setTimeout(() => nextQuestion(), 900);
+      autoNextTimer = setTimeout(() => nextQuestion(), 1300);
     }
     return;
   }
@@ -543,7 +541,7 @@ function checkCurrentAnswer() {
       playMascotMoment(role, rec.correct ? () => doGo(1) : null);
     }, rec.correct ? 700 : 500);
   } else if (rec.correct) {
-    autoNextTimer = setTimeout(() => doGo(1), 900);
+    autoNextTimer = setTimeout(() => doGo(1), 1300);
   }
 }
 
