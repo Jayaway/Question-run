@@ -910,7 +910,7 @@ function launchConfetti() {
   }
   burst.appendChild(frag);
   document.body.appendChild(burst);
-  setTimeout(() => burst.remove(), lite ? 900 : 1500);
+  setTimeout(() => burst.remove(), lite ? 1200 : 1500);
 }
 function flashCorrect() {
   els.questionCard?.classList.remove("wrong-border", "shake");
