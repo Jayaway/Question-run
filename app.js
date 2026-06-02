@@ -85,6 +85,7 @@ const els = {
   streakCount: document.querySelector("#streakCount"),
   questionTitle: document.querySelector("#questionTitle"),
   questionCard: document.querySelector(".question-card"),
+  questionBody: document.querySelector(".question-body"),
   questionPrompt: document.querySelector("#questionPrompt"),
   questionImage: document.querySelector("#questionImage"),
   choiceArea: document.querySelector("#choiceArea"),
@@ -918,15 +919,15 @@ function launchConfetti() {
   setTimeout(() => burst.remove(), lite ? 1600 : 1500);
 }
 function flashCorrect() {
-  els.questionCard?.classList.remove("wrong-border", "shake");
+  els.questionBody?.classList.remove("wrong-border", "shake");
   launchConfetti();
-  els.questionCard?.classList.add("correct-flash", "correct-border");
-  setTimeout(() => els.questionCard?.classList.remove("correct-flash", "correct-border"), PERFORMANCE_MODE ? 420 : 620);
+  els.questionBody?.classList.add("correct-flash", "correct-border");
+  setTimeout(() => els.questionBody?.classList.remove("correct-flash", "correct-border"), PERFORMANCE_MODE ? 420 : 620);
 }
 function shakeWrong() {
-  els.questionCard?.classList.remove("correct-flash", "correct-border");
-  els.questionCard?.classList.add("shake", "wrong-border");
-  setTimeout(() => els.questionCard?.classList.remove("shake", "wrong-border"), PERFORMANCE_MODE ? 320 : 560);
+  els.questionBody?.classList.remove("correct-flash", "correct-border");
+  els.questionBody?.classList.add("shake", "wrong-border");
+  setTimeout(() => els.questionBody?.classList.remove("shake", "wrong-border"), PERFORMANCE_MODE ? 320 : 560);
 }
 function addOptionRipple(btn) {
   if (PERFORMANCE_MODE) {
