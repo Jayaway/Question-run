@@ -919,15 +919,15 @@ function launchConfetti() {
   setTimeout(() => burst.remove(), lite ? 1600 : 1500);
 }
 function flashCorrect() {
-  els.questionBody?.classList.remove("wrong-border", "shake");
+  els.questionBody?.classList.remove("shake");
   launchConfetti();
   els.questionBody?.classList.add("correct-flash", "correct-border");
   setTimeout(() => els.questionBody?.classList.remove("correct-flash", "correct-border"), PERFORMANCE_MODE ? 420 : 620);
 }
 function shakeWrong() {
   els.questionBody?.classList.remove("correct-flash", "correct-border");
-  els.questionBody?.classList.add("shake", "wrong-border");
-  setTimeout(() => els.questionBody?.classList.remove("shake", "wrong-border"), PERFORMANCE_MODE ? 320 : 560);
+  els.questionBody?.classList.add("shake");
+  setTimeout(() => els.questionBody?.classList.remove("shake"), PERFORMANCE_MODE ? 320 : 560);
 }
 function addOptionRipple(btn) {
   if (PERFORMANCE_MODE) {

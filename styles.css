@@ -73,8 +73,8 @@ body.drawer-open .drawer-overlay { opacity: 1; pointer-events: auto; }
 .brand { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .theme-toggle {
   flex-shrink: 0;
-  width: 44px; height: 44px;
-  border-radius: 12px;
+  width: 52px; height: 52px;
+  border-radius: 14px;
   border: 2px solid rgba(255,255,255,.35);
   background: rgba(255,255,255,.15);
   font-size: 18px;
@@ -84,7 +84,7 @@ body.drawer-open .drawer-overlay { opacity: 1; pointer-events: auto; }
   justify-content: center;
   cursor: pointer;
   transition: background .2s, transform .2s;
-  padding: 6px;
+  padding: 4px;
   overflow: hidden;
 }
 .theme-toggle img { width: 100%; height: 100%; object-fit: contain; }
@@ -928,7 +928,7 @@ body.dark .admin-entry.active { background: #18351F; color: #7EE35B; border-colo
   }
   .brand h1 { font-size: 24px; font-weight: 600; line-height: 1.25; }
   .brand p { font-size: 12px; font-weight: 400; }
-  .theme-toggle { width: 44px; height: 44px; border-radius: 12px; }
+  .theme-toggle { width: 52px; height: 52px; border-radius: 14px; }
   .bank-picker-section,
   .study-tools,
   .collapse-section {
