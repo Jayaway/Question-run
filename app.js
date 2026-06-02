@@ -261,15 +261,15 @@ function loadState(id) {
   try { return { ...f, ...JSON.parse(raw || "{}") }; } catch { return f; }
 }
 function saveState() { if (currentBankId) localStorage.setItem(stateKey(currentBankId), JSON.stringify(app)); }
-function recordFor(id) { if (!app.records[id]) app.records[id] = { attempts: 0, revealed: false, correct: null, mastered: null }; return app.records[id]; }
+function recordFor(id) { if (!app.records[id]) app.records[id] = { revealed: false, correct: null }; return app.records[id]; }
 
 function filteredQuestions() {
   const query = app.query.trim().toLowerCase();
   return questions.filter(q => {
     const rec = app.records[q.id];
     const marked = Boolean(app.marked[q.id]);
-    const done = Boolean(rec && (rec.revealed || rec.mastered !== null || rec.correct !== null));
-    const wrong = Boolean(rec && (rec.firstWrong === true || rec.correct === false || rec.mastered === false));
+    const done = Boolean(rec && (rec.revealed || rec.correct !== null));
+    const wrong = Boolean(rec && (rec.firstWrong === true || rec.correct === false));
     if (app.section !== "全部题型" && q.section !== app.section) return false;
 
     if (app.status === "wrong" && !wrong) return false;
@@ -314,7 +314,7 @@ function getMoodWord(count) {
   return MOOD_WORDS[idx];
 }
 function renderStats() {
-  const done = questions.filter(q => { const r = app.records[q.id]; return r && (r.revealed || r.mastered !== null || r.correct !== null); }).length;
+  const done = questions.filter(q => { const r = app.records[q.id]; return r && (r.revealed || r.correct !== null); }).length;
   const checked = Object.values(app.records).filter(r => r.correct !== null);
   const correct = checked.filter(r => r.correct === true).length;
   const accuracy = checked.length ? Math.round((correct / checked.length) * 100) : 0;
@@ -328,9 +328,9 @@ function renderMode() {
 }
 function renderNav(list) {
   els.questionNav.innerHTML = list.map((q, idx) => {
-    const rec = app.records[q.id], done = rec && (rec.revealed || rec.mastered !== null || rec.correct !== null);
+    const rec = app.records[q.id], done = rec && (rec.revealed || rec.correct !== null);
     const correct = rec && rec.correct === true;
-    const wrong = rec && (rec.firstWrong === true || rec.correct === false || rec.mastered === false), marked = app.marked[q.id];
+    const wrong = rec && (rec.firstWrong === true || rec.correct === false), marked = app.marked[q.id];
     const cls = ["nav-item", idx === app.index && "active", done && !wrong && "done", correct && "correct", wrong && "wrong", marked && "marked"].filter(Boolean).join(" ");
     return `<button class="${cls}" data-index="${idx}" title="${escapeAttr(q.title)}">${shortLabel(q)}</button>`;
   }).join("");
@@ -348,12 +348,6 @@ function renderEmpty() {
   els.primaryBtn.disabled = true; els.primaryBtn.textContent = "继续";
   els.prevBtn.disabled = true; els.nextBtn.disabled = true;
   els.questionNav.innerHTML = `<div class="empty">当前筛选下没有题目。</div>`;
-}
-
-// 切到新题时让题卡淡入+轻微上滑；性能模式或无 GSAP 时跳过
-let lastShownId = null;
-function animateCardIn() {
-  // GSAP 未加载，动画由 CSS transition 处理，此函数保留供将来扩展
 }
 
 function renderQuestion(q, list) {
@@ -449,7 +443,6 @@ function renderQuestion(q, list) {
     clearTimeout(_feedbackDelayTimer);
   }
 
-  if (q.id !== lastShownId) { lastShownId = q.id; animateCardIn(); }
 }
 
 function normalizeAnswer(v) { return String(v ?? "").trim().replace(/\s+/g, " ").toLowerCase(); }
@@ -486,7 +479,7 @@ function hideFeedback() {
     els.feedbackPanel.dataset.state = "hidden";
   }, { once: true });
   // 隐藏答案解析时移除蓝色边框
-  els.questionBody?.classList.remove("correct-flash", "correct-border");
+  els.questionBody?.classList.remove("correct-flash");
 }
 function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法填空":"算","问答题":"问","算法设计题":"设","算法设计与分析题":"设","单选题":"单","判断题":"判","分析题":"析","应用题":"用","综合题":"综","基础概念":"础","易错辨析":"易","应用提高":"高"}[q.section]||"题"; return `${p}${q.number}`; }
 function escapeHtml(t) { return String(t||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
@@ -522,7 +515,6 @@ function checkCurrentAnswer() {
 
     if (isFirstAttempt) {
       rec.correct = correct;
-      rec.attempts = (rec.attempts || 0) + 1;
       if (!correct && rec.firstWrong == null) rec.firstWrong = true;
       if (correct) { app.streak = (app.streak || 0) + 1; }
       else { app.streak = 0; }
@@ -532,8 +524,8 @@ function checkCurrentAnswer() {
     if (correct) {
       playCorrectSound();
       rec.revealed = true;
-      if (isFirstAttempt) { pulseStreak(); flashCorrect(); }
-      else { flashCorrect(); }
+      if (isFirstAttempt) pulseStreak();
+      flashCorrect();
     } else {
       playWrongSound();
     }
@@ -559,10 +551,8 @@ function checkCurrentAnswer() {
 
   const value = q.type === "fill" || q.type === "code" ? els.fillInput.value : els.memoryInput.value;
   rec.input = value;
-  rec.attempts = (rec.attempts || 0) + 1;
   const correct = q.type === "fill" || q.type === "code" ? checkFillAnswer(value, q.answer) : normalizeAnswer(value) === normalizeAnswer(q.answer);
   rec.correct = correct;
-  rec.mastered = correct;
   rec.revealed = true;
   if (!correct && rec.firstWrong == null) rec.firstWrong = true;
   if (correct) { app.streak = (app.streak || 0) + 1; playCorrectSound(); }
@@ -596,7 +586,6 @@ function handlePrimaryAction() {
   if (q.type === "choice") return;
   if (app.mode === "memorize") {
     rec.revealed = true;
-    rec.mastered = true;
     render();
     return;
   }
@@ -981,7 +970,7 @@ function shakeWrong(key) {
     }
   } else {
     // 填空题抖动输入框
-    els.questionBody?.classList.remove("correct-flash", "correct-border");
+    els.questionBody?.classList.remove("correct-flash");
     els.questionBody?.classList.add("shake");
     setTimeout(() => els.questionBody?.classList.remove("shake"), PERFORMANCE_MODE ? 320 : 560);
   }
@@ -1061,7 +1050,4 @@ if (!PERFORMANCE_MODE) {
   new Image().src = "./assets/wrong-speechless.webp";
 }
 
-// 每次渲染后自动保存状态
-const _origRender = render;
-render = function() { _origRender(); saveState(); };
 render();
