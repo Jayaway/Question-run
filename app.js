@@ -633,7 +633,7 @@ function toggleTheme() {
 function updateThemeAssets() {
   if (els.themeToggle) {
     const img = els.themeToggle.querySelector("img");
-    if (img) img.src = document.body.classList.contains("dark") ? "./assets/moon.webp" : "./assets/sun2.png";
+    if (img) img.src = document.body.classList.contains("dark") ? "./assets/moon.webp" : "./assets/sun2.webp";
   }
   const meta = document.querySelector("#themeColorMeta");
   if (meta) meta.content = document.body.classList.contains("dark") ? "#101314" : "#f8fbf5";
