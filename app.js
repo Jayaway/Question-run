@@ -412,9 +412,10 @@ function renderQuestion(q, list) {
   }
 
   if (reveal || rec.correct === false) {
-    // 答对/答错都延迟展示解析，避免挡住选项
     clearTimeout(_feedbackDelayTimer);
-    _feedbackDelayTimer = setTimeout(() => showFeedback(q, rec.correct !== false), 650);
+    // 答对 0.65s、答错 4s 后展示解析
+    const delay = rec.correct === false ? 4000 : 650;
+    _feedbackDelayTimer = setTimeout(() => showFeedback(q, rec.correct !== false), delay);
   } else {
     hideFeedback();
     clearTimeout(_feedbackDelayTimer);
@@ -460,7 +461,7 @@ function escapeHtml(t) { return String(t||"").replaceAll("&","&amp;").replaceAll
 function escapeAttr(t) { return escapeHtml(t); }
 
 function clearAutoNext() { if (autoNextTimer) { clearTimeout(autoNextTimer); autoNextTimer = 0; } }
-function goToIndex(nextIndex) { app.index = Math.max(0, Math.min(nextIndex, filteredQuestions().length - 1)); render(); }
+function goToIndex(nextIndex) { clearTimeout(_feedbackDelayTimer); clearAutoNext(); app.index = Math.max(0, Math.min(nextIndex, filteredQuestions().length - 1)); render(); }
 function doGo(step) { const list = filteredQuestions(); if (!list.length) return; goToIndex(app.index + step); }
 function nextQuestion() { doGo(1); }
 function prevQuestion() { doGo(-1); }
