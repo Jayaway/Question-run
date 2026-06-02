@@ -417,9 +417,10 @@ function renderQuestion(q, list) {
     clearTimeout(_feedbackDelayTimer);
     _feedbackDelayTimer = setTimeout(() => showFeedback(q, rec.correct !== false), 650);
   } else if (rec.correct === false) {
-    // 选错后 4 秒才揭示正确选项 + 弹出解析
-    clearTimeout(_feedbackDelayTimer);
-    _feedbackDelayTimer = setTimeout(() => {
+    // 选错后 4 秒才揭示正确选项 + 弹出解析（首次设定，重试不刷新计时器）
+    if (!_feedbackDelayTimer) {
+      _feedbackDelayTimer = setTimeout(() => {
+      _feedbackDelayTimer = 0;
       rec.revealed = true;
       // 手动更新选项样式，不触发 render 避免递归计时器
       els.choiceArea?.querySelectorAll(".option-btn").forEach(btn => {
@@ -441,6 +442,7 @@ function renderQuestion(q, list) {
       els.primaryBtn.dataset.state = "next";
       showFeedback(q, false);
     }, 4000);
+    }
   } else {
     hideFeedback();
     clearTimeout(_feedbackDelayTimer);
@@ -517,15 +519,18 @@ function checkCurrentAnswer() {
       rec.correct = correct;
       rec.attempts = (rec.attempts || 0) + 1;
       if (!correct && rec.firstWrong == null) rec.firstWrong = true;
-      if (correct) { app.streak = (app.streak || 0) + 1; playCorrectSound(); }
-      else { app.streak = 0; playWrongSound(); }
+      if (correct) { app.streak = (app.streak || 0) + 1; }
+      else { app.streak = 0; }
       recordAnswer(correct);
     }
 
     if (correct) {
+      playCorrectSound();
       rec.revealed = true;
       if (isFirstAttempt) { pulseStreak(); flashCorrect(); }
-      else { playCorrectSound(); flashCorrect(); }
+      else { flashCorrect(); }
+    } else {
+      playWrongSound();
     }
 
     render();
