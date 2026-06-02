@@ -357,7 +357,6 @@ function animateCardIn() {
 
 function renderQuestion(q, list) {
   const rec = recordFor(q.id), reveal = app.mode === "memorize" || rec.revealed;
-  const showResult = reveal || rec.correct === false; // 选错后也显示对错高亮
   els.typeBadge.textContent = q.section; els.progressText.textContent = `${app.index + 1} / ${list.length}`;
   els.questionTitle.textContent = q.title; els.questionPrompt.textContent = q.prompt || q.title;
   els.markBtn.classList.toggle("active", Boolean(app.marked[q.id]));
@@ -392,13 +391,16 @@ function renderQuestion(q, list) {
     els.choiceArea.innerHTML = q.options.map(opt => {
       let cls = "option-btn";
       let mark = "";
-      if (showResult) {
-        const selected = rec.selected === opt.key;
-        const isCorrect = normalizeAnswer(opt.key) === normalizeAnswer(q.answer);
+      const selected = rec.selected === opt.key;
+      const isCorrect = normalizeAnswer(opt.key) === normalizeAnswer(q.answer);
+      // reveal 为 true：已揭示全部答案（正确或点过下一题）
+      // rec.correct === false 且 !reveal：选错后在等待期，只标红错误选项，不透露正确答案
+      if (reveal) {
         if (isCorrect) { cls += " correct"; mark = `<img src="./assets/check-mark.webp" class="option-mark-img" alt="">`; }
         else if (selected) { cls += " wrong"; mark = `<img src="./assets/x-mark.webp" class="option-mark-img" alt="">`; }
+      } else if (rec.correct === false && selected) {
+        cls += " wrong"; mark = `<img src="./assets/x-mark.webp" class="option-mark-img" alt="">`;
       }
-      // 已揭示（正确/点下一题/重选正确）后禁用选项
       return `<button class="${cls}" type="button" data-key="${escapeAttr(opt.key)}" ${reveal ? "disabled" : ""}><span class="option-key">${escapeHtml(opt.key)}</span><span>${escapeHtml(opt.text)}</span><span class="option-mark">${mark}</span></button>`;
     }).join("");
   } else if (q.type === "fill" || q.type === "code") {
@@ -411,11 +413,34 @@ function renderQuestion(q, list) {
     els.memoryInput.disabled = reveal;
   }
 
-  if (reveal || rec.correct === false) {
+  if (reveal) {
     clearTimeout(_feedbackDelayTimer);
-    // 答对 0.65s、答错 4s 后展示解析
-    const delay = rec.correct === false ? 4000 : 650;
-    _feedbackDelayTimer = setTimeout(() => showFeedback(q, rec.correct !== false), delay);
+    _feedbackDelayTimer = setTimeout(() => showFeedback(q, rec.correct !== false), 650);
+  } else if (rec.correct === false) {
+    // 选错后 4 秒才揭示正确选项 + 弹出解析
+    clearTimeout(_feedbackDelayTimer);
+    _feedbackDelayTimer = setTimeout(() => {
+      rec.revealed = true;
+      // 手动更新选项样式，不触发 render 避免递归计时器
+      els.choiceArea?.querySelectorAll(".option-btn").forEach(btn => {
+        const key = btn.dataset.key;
+        const isCorrect = normalizeAnswer(key) === normalizeAnswer(q.answer);
+        const selected = key === rec.selected;
+        if (isCorrect) {
+          btn.classList.add("correct");
+          const mark = btn.querySelector(".option-mark");
+          if (mark) mark.innerHTML = `<img src="./assets/check-mark.webp" class="option-mark-img" alt="">`;
+        } else if (selected) {
+          btn.classList.add("wrong");
+          const mark = btn.querySelector(".option-mark");
+          if (mark) mark.innerHTML = `<img src="./assets/x-mark.webp" class="option-mark-img" alt="">`;
+        }
+        btn.disabled = true;
+      });
+      els.primaryBtn.textContent = "下一题";
+      els.primaryBtn.dataset.state = "next";
+      showFeedback(q, false);
+    }, 4000);
   } else {
     hideFeedback();
     clearTimeout(_feedbackDelayTimer);
