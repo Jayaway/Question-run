@@ -500,11 +500,15 @@ function checkCurrentAnswer() {
       rec.revealed = true;
       if (isFirstAttempt) { pulseStreak(); flashCorrect(); }
       else { playCorrectSound(); flashCorrect(); }
-    } else {
-      shakeWrong(rec.selected);
     }
 
     render();
+    if (!correct && q.type === "choice") {
+      // render 后 DOM 已重建，延迟触发选中按钮抖动
+      setTimeout(() => shakeWrong(rec.selected), 50);
+    } else if (!correct) {
+      shakeWrong();
+    }
     if (isFirstAttempt && answeredCount % 10 === 0) {
       setTimeout(() => {
         const role = chooseCheckpointMascot(correct);
