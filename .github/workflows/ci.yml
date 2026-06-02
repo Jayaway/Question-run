@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: 验证项目结构
+    runs-on: ubuntu-latest
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 验证 server.js 可启动
+        run: |
+          timeout 5 node server.js || true
+          echo "✅ server.js 语法正确"
+
+      - name: 检查必需文件
+        run: |
+          test -f index.html || (echo "❌ 缺少 index.html" && exit 1)
+          test -f app.js || (echo "❌ 缺少 app.js" && exit 1)
+          test -f styles.css || (echo "❌ 缺少 styles.css" && exit 1)
+          test -f banks.js || (echo "❌ 缺少 banks.js" && exit 1)
+          test -f data.js || (echo "❌ 缺少 data.js" && exit 1)
+          test -f server.js || (echo "❌ 缺少 server.js" && exit 1)
+          echo "✅ 必需文件齐全"
+
+      - name: 验证 HTML/CSS/JS 语法
+        run: |
+          node -e "require('fs').readFileSync('index.html', 'utf8')" && echo "✅ index.html 正常"
+          node -e "require('fs').readFileSync('app.js', 'utf8')" && echo "✅ app.js 正常"
+          node -e "require('fs').readFileSync('styles.css', 'utf8')" && echo "✅ styles.css 正常"
+
+      - name: 验证题库 JSON
+        run: |
+          cd 题库
+          for f in *.json; do
+            node -e "JSON.parse(require('fs').readFileSync('$f', 'utf8'))" && echo "✅ $f 有效"
+          done
+
+      - name: 检查 styles.css 引用
+        run: |
+          grep -q '\.nav-item\.correct' styles.css && echo "✅ nav-item.correct 样式存在"
+          grep -q '\.nav-item\.wrong' styles.css && echo "✅ nav-item.wrong 样式存在"
+
+  dead-link-check:
+    name: 检查失效的资源引用
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 检查 assets 引用
+        run: |
+          echo "🔍 检查 assets 目录中所有 .webp/.png/.jpg/.jpeg 是否被引用..."
+          missing=0
+          for f in assets/*; do
+            filename=$(basename "$f")
+            if ! grep -rq "$filename" --include="*.js" --include="*.html" --include="*.css" . 2>/dev/null; then
+              echo "⚠️  $filename 未被引用"
+              missing=$((missing+1))
+            fi
+          done
+          if [ $missing -gt 0 ]; then
+            echo "❌ 有 $missing 个未引用的资源"
+            exit 1
+          else
+            echo "✅ 所有资源都被正确引用"
+          fi

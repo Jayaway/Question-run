@@ -9,6 +9,7 @@
 ![GitHub stars](https://img.shields.io/github/stars/Jayaway/Question-run?style=social)
 ![GitHub forks](https://img.shields.io/github/forks/Jayaway/Question-run?style=social)
 ![License](https://img.shields.io/badge/license-MIT-blue)
+![CI](https://github.com/Jayaway/Question-run/workflows/CI/badge.svg)
 
 ---
 
@@ -157,6 +158,16 @@ Question-run/
 
 ---
 
+## 🐛 报告问题
+
+发现 Bug 或想提建议？欢迎开 Issue 反馈！
+
+- 🐛 [报告 Bug](https://github.com/Jayaway/Question-run/issues/new?template=bug_report.md)
+- ✨ [功能建议](https://github.com/Jayaway/Question-run/issues/new?template=feature_request.md)
+- 📚 [贡献题库](https://github.com/Jayaway/Question-run/issues/new?template=question_bank.md)
+
+---
+
 ## 🤝 贡献
 
 欢迎 PR 新的题库、修复 bug、优化交互！
@@ -172,6 +183,18 @@ Question-run/
 ## 📜 License
 
 MIT © [Jayaway](https://github.com/Jayaway)
+
+---
+
+## 👥 贡献者
+
+感谢所有为这个项目付出的人！
+
+<a href="https://github.com/Jayaway/Question-run/graphs/contributors">
+  <img src="https://contrib.rocks/image?repo=Jayaway/Question-run" alt="贡献者" />
+</a>
+
+> 🎉 成为第一个贡献者！提交 PR 后你的头像会自动出现在这里。
 
 ---
 
