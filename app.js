@@ -501,7 +501,7 @@ function checkCurrentAnswer() {
       if (isFirstAttempt) { pulseStreak(); flashCorrect(); }
       else { playCorrectSound(); flashCorrect(); }
     } else {
-      shakeWrong();
+      shakeWrong(rec.selected);
     }
 
     render();
@@ -924,10 +924,20 @@ function flashCorrect() {
   els.questionBody?.classList.add("correct-flash", "correct-border");
   setTimeout(() => els.questionBody?.classList.remove("correct-flash", "correct-border"), PERFORMANCE_MODE ? 420 : 620);
 }
-function shakeWrong() {
-  els.questionBody?.classList.remove("correct-flash", "correct-border");
-  els.questionBody?.classList.add("shake");
-  setTimeout(() => els.questionBody?.classList.remove("shake"), PERFORMANCE_MODE ? 320 : 560);
+function shakeWrong(key) {
+  if (key) {
+    // 只抖动选错的选项按钮
+    const btn = els.choiceArea?.querySelector(`[data-key="${CSS.escape(key)}"]`);
+    if (btn) {
+      btn.classList.add("shake");
+      setTimeout(() => btn.classList.remove("shake"), PERFORMANCE_MODE ? 320 : 560);
+    }
+  } else {
+    // 填空题抖动输入框
+    els.questionBody?.classList.remove("correct-flash", "correct-border");
+    els.questionBody?.classList.add("shake");
+    setTimeout(() => els.questionBody?.classList.remove("shake"), PERFORMANCE_MODE ? 320 : 560);
+  }
 }
 function addOptionRipple(btn) {
   if (PERFORMANCE_MODE) {
