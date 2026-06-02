@@ -550,8 +550,8 @@ function checkCurrentAnswer() {
         const role = chooseCheckpointMascot(correct);
         playMascotMoment(role, correct ? () => nextQuestion() : null);
       }, correct ? 700 : 500);
-    } else if (correct) {
-      // 答对自动跳下一题（非弹窗时机）
+    } else if (correct && isFirstAttempt) {
+      // 答对自动跳下一题（仅首次答对，补选不算）
       autoNextTimer = setTimeout(() => nextQuestion(), 1300);
     }
     return;
