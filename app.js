@@ -184,7 +184,7 @@ function selectBank(id) {
   questions = bank.questions || [];
   app = loadState(id);
   answeredCount = 0; last15Results = [];
-  const g = groupOfBank(id); if (g) openSubjects.add(g.subject);
+  const g = groupOfBank(id); if (g && openSubjects.has(g.subject)) openSubjects.delete(g.subject);
   closeAllDropdowns();
   initFilters(); renderBankPicker(); render();
   closeDrawerOnMobile();
@@ -329,8 +329,9 @@ function renderMode() {
 function renderNav(list) {
   els.questionNav.innerHTML = list.map((q, idx) => {
     const rec = app.records[q.id], done = rec && (rec.revealed || rec.mastered !== null || rec.correct !== null);
+    const correct = rec && rec.correct === true;
     const wrong = rec && (rec.firstWrong === true || rec.correct === false || rec.mastered === false), marked = app.marked[q.id];
-    const cls = ["nav-item", idx === app.index && "active", done && "done", wrong && "wrong", marked && "marked"].filter(Boolean).join(" ");
+    const cls = ["nav-item", idx === app.index && "active", done && !wrong && "done", correct && "correct", wrong && "wrong", marked && "marked"].filter(Boolean).join(" ");
     return `<button class="${cls}" data-index="${idx}" title="${escapeAttr(q.title)}">${shortLabel(q)}</button>`;
   }).join("");
 }
@@ -460,6 +461,8 @@ function checkFillAnswer(input, answer) {
   return userParts.length === answerParts.length && userParts.every((part, index) => part === answerParts[index]);
 }
 function showFeedback(q, correct) {
+  // 移除可能还在播放的隐藏动画
+  els.feedbackPanel.classList.remove("pop-burst");
   els.feedbackPanel.dataset.state = correct ? "ok" : "bad";
   if (correct) {
     const imgs = ["./assets/correct-sunglasses.webp", "./assets/correct-glow.webp", "./assets/correct-celebrate.webp"];
@@ -482,8 +485,10 @@ function hideFeedback() {
     els.feedbackPanel.classList.remove("pop-burst");
     els.feedbackPanel.dataset.state = "hidden";
   }, { once: true });
+  // 隐藏答案解析时移除蓝色边框
+  els.questionBody?.classList.remove("correct-flash", "correct-border");
 }
-function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法填空":"算","问答题":"问","算法设计题":"设","算法设计与分析题":"设","单选题":"单","判断题":"判","分析题":"析","应用题":"用","综合题":"综","基础概念":"基","易错辨析":"易","应用提高":"高"}[q.section]||"题"; return `${p}${q.number}`; }
+function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法填空":"算","问答题":"问","算法设计题":"设","算法设计与分析题":"设","单选题":"单","判断题":"判","分析题":"析","应用题":"用","综合题":"综","基础概念":"础","易错辨析":"易","应用提高":"高"}[q.section]||"题"; return `${p}${q.number}`; }
 function escapeHtml(t) { return String(t||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
 function escapeAttr(t) { return escapeHtml(t); }
 
@@ -731,7 +736,14 @@ function bindEvents() {
     btn.addEventListener("click", () => {
       const mode = btn.dataset.mode;
       const status = btn.dataset.status;
-      if (mode) {
+      if (mode && mode !== app.mode) {
+        // 模式切换时：刷题→备题不清状态，备题→刷题需重置未答题目的 revealed
+        if (mode === "practice") {
+          Object.keys(app.records).forEach(id => {
+            const rec = app.records[id];
+            if (rec.correct === null) rec.revealed = false;
+          });
+        }
         app.mode = mode;
         app.status = "all";
       }
@@ -956,8 +968,8 @@ function launchConfetti() {
 function flashCorrect() {
   els.questionBody?.classList.remove("shake");
   launchConfetti();
-  els.questionBody?.classList.add("correct-flash", "correct-border");
-  setTimeout(() => els.questionBody?.classList.remove("correct-flash", "correct-border"), PERFORMANCE_MODE ? 420 : 620);
+  els.questionBody?.classList.add("correct-flash");
+  setTimeout(() => els.questionBody?.classList.remove("correct-flash"), PERFORMANCE_MODE ? 420 : 620);
 }
 function shakeWrong(key) {
   if (key) {
