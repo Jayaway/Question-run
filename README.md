@@ -28,14 +28,14 @@
 
 ## 📱 效果展示
 
-### 暗色模式
+### 亮色模式
 
 <div align="center">
   <img src="docs/screenshots/dark-quiz.png" width="45%" alt="暗色刷题界面"/>
   <img src="docs/screenshots/dark-sidebar.png" width="45%" alt="暗色题库抽屉"/>
 </div>
 
-### 亮色模式
+### 暗色模式
 
 <div align="center">
   <img src="docs/screenshots/light-quiz.png" width="45%" alt="亮色刷题界面"/>
@@ -200,7 +200,7 @@ MIT © [Jayaway](https://github.com/Jayaway)
 
 ## 🙏 致谢
 
-- 吉祥物素材来自开源项目
+- 五个卡通形象分别是～ 我也忘了叫啥了，你们自己探索去吧。
 - 音效由 Web Audio API 实时合成
 - 样式灵感来自 Duolingo
 
