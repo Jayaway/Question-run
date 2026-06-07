@@ -1,0 +1,612 @@
+{
+  "meta": {
+    "title": "概述及进程管理练习",
+    "source": "操作系统 · 概述及进程管理",
+    "count": 25
+  },
+  "questions": [
+    {
+      "id": "OS-OP-001",
+      "section": "单选题",
+      "number": 1,
+      "type": "choice",
+      "prompt": "Linux 操作系统属于（ ）操作系统。",
+      "options": [
+        {
+          "key": "A",
+          "text": "单用户单任务"
+        },
+        {
+          "key": "B",
+          "text": "多用户多任务"
+        },
+        {
+          "key": "C",
+          "text": "单用户多任务"
+        },
+        {
+          "key": "D",
+          "text": "多用户单任务"
+        }
+      ],
+      "answer": "B",
+      "analysis": "Linux 支持多用户登录、多任务并发。"
+    },
+    {
+      "id": "OS-OP-002",
+      "section": "单选题",
+      "number": 2,
+      "type": "choice",
+      "prompt": "下列关于系统调用的叙述中，正确的是（ ）。[2019 年 408 统考] Ⅰ．在执行系统调用服务程序的过程中，CPU 处于内核态 Ⅱ．操作系统通过提供系统调用避免用户程序直接访问外设 Ⅲ．不同的操作系统为应用程序提供了统一的系统调用接口 Ⅳ．系统调用是操作系统内核为应用程序提供服务的接口",
+      "options": [
+        {
+          "key": "A",
+          "text": "仅Ⅰ、Ⅳ"
+        },
+        {
+          "key": "B",
+          "text": "仅Ⅱ、Ⅲ"
+        },
+        {
+          "key": "C",
+          "text": "仅Ⅰ、Ⅱ、Ⅳ"
+        },
+        {
+          "key": "D",
+          "text": "仅Ⅰ、Ⅲ、Ⅳ"
+        }
+      ],
+      "answer": "C",
+      "analysis": "Ⅲ错：不同 OS 系统调用接口不同（如 Linux 的 read 与 Windows 的 ReadFile）。"
+    },
+    {
+      "id": "OS-OP-003",
+      "section": "单选题",
+      "number": 3,
+      "type": "choice",
+      "prompt": "在分时操作系统中，进程调度经常采用（ ）算法。",
+      "options": [
+        {
+          "key": "A",
+          "text": "先来先服务"
+        },
+        {
+          "key": "B",
+          "text": "最高优先权"
+        },
+        {
+          "key": "C",
+          "text": "时间片轮转"
+        },
+        {
+          "key": "D",
+          "text": "随机"
+        }
+      ],
+      "answer": "C",
+      "analysis": "分时核心算法。"
+    },
+    {
+      "id": "OS-OP-004",
+      "section": "单选题",
+      "number": 4,
+      "type": "choice",
+      "prompt": "操作系统中，进程存在的唯一标志是（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "程序代码"
+        },
+        {
+          "key": "B",
+          "text": "数据"
+        },
+        {
+          "key": "C",
+          "text": "进程控制块"
+        },
+        {
+          "key": "D",
+          "text": "执行过程"
+        }
+      ],
+      "answer": "C",
+      "analysis": "PCB 是进程存在的唯一标志。"
+    },
+    {
+      "id": "OS-OP-005",
+      "section": "单选题",
+      "number": 5,
+      "type": "choice",
+      "prompt": "下面选项中哪一个不是操作系统的基本特征（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "并行性"
+        },
+        {
+          "key": "B",
+          "text": "共享性"
+        },
+        {
+          "key": "C",
+          "text": "虚拟性"
+        },
+        {
+          "key": "D",
+          "text": "异步性"
+        }
+      ],
+      "answer": "A",
+      "analysis": "OS 四大特征：并发、共享、虚拟、异步。注意是「并发」不是「并行」。"
+    },
+    {
+      "id": "OS-OP-006",
+      "section": "单选题",
+      "number": 6,
+      "type": "choice",
+      "prompt": "下列进程状态转换中，绝不可能发生的状态转换是（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "就绪→执行"
+        },
+        {
+          "key": "B",
+          "text": "执行→就绪"
+        },
+        {
+          "key": "C",
+          "text": "就绪→阻塞"
+        },
+        {
+          "key": "D",
+          "text": "执行→阻塞"
+        }
+      ],
+      "answer": "C",
+      "analysis": "阻塞必须经过「执行→阻塞」，就绪态进程没占用 CPU 不能直接阻塞。"
+    },
+    {
+      "id": "OS-OP-007",
+      "section": "单选题",
+      "number": 7,
+      "type": "choice",
+      "prompt": "下面哪一个是进程控制中激活原语做的工作？",
+      "options": [
+        {
+          "key": "A",
+          "text": "为新进程分配空间"
+        },
+        {
+          "key": "B",
+          "text": "回收 PCB 资源清单中登记的全部资源"
+        },
+        {
+          "key": "C",
+          "text": "保存进程 CPU 现场"
+        },
+        {
+          "key": "D",
+          "text": "将进程从外存调入内存"
+        }
+      ],
+      "answer": "D",
+      "analysis": "激活原语：将进程从外存调入内存 → 改为就绪态。"
+    },
+    {
+      "id": "OS-OP-008",
+      "section": "单选题",
+      "number": 8,
+      "type": "choice",
+      "prompt": "在进程管理中，当（ ）时，进程从阻塞状态变为就绪状态。",
+      "options": [
+        {
+          "key": "A",
+          "text": "进程被进程调度程序选中"
+        },
+        {
+          "key": "B",
+          "text": "等待某一事件"
+        },
+        {
+          "key": "C",
+          "text": "等待的事件已发生"
+        },
+        {
+          "key": "D",
+          "text": "时间片用完"
+        }
+      ],
+      "answer": "C",
+      "analysis": "阻塞→就绪：等待的事件已发生。"
+    },
+    {
+      "id": "OS-OP-009",
+      "section": "单选题",
+      "number": 9,
+      "type": "choice",
+      "prompt": "某进程由于需要从磁盘上读入数据而处于阻塞状态。当系统完成了所需的读盘操作后，此时该进程的状态将（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "从就绪变为运行"
+        },
+        {
+          "key": "B",
+          "text": "从运行变为就绪"
+        },
+        {
+          "key": "C",
+          "text": "从阻塞变为运行"
+        },
+        {
+          "key": "D",
+          "text": "从阻塞变为就绪"
+        }
+      ],
+      "answer": "D",
+      "analysis": "I/O 完成唤醒进程 → 阻塞变就绪。"
+    },
+    {
+      "id": "OS-OP-010",
+      "section": "单选题",
+      "number": 10,
+      "type": "choice",
+      "prompt": "进程从运行状态进入就绪状态的原因可能是（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "被选中占有处理机"
+        },
+        {
+          "key": "B",
+          "text": "等待某一事件"
+        },
+        {
+          "key": "C",
+          "text": "等待的事件已发生"
+        },
+        {
+          "key": "D",
+          "text": "时间片用完"
+        }
+      ],
+      "answer": "D",
+      "analysis": "时间片用完 → 剥夺 CPU → 运行→就绪。"
+    },
+    {
+      "id": "OS-OP-011",
+      "section": "单选题",
+      "number": 11,
+      "type": "choice",
+      "prompt": "一个进程当前因为等待 I/O 处于阻塞状态，则（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "它可以被调度而获得处理机"
+        },
+        {
+          "key": "B",
+          "text": "当 I/O 完成后，它将变成就绪状态"
+        },
+        {
+          "key": "C",
+          "text": "它永远不会被执行"
+        },
+        {
+          "key": "D",
+          "text": "它可能变成就绪状态，也可能直接获得处理机"
+        }
+      ],
+      "answer": "B",
+      "analysis": "阻塞进程不可调度；I/O 完成唤醒为就绪态。"
+    },
+    {
+      "id": "OS-OP-012",
+      "section": "单选题",
+      "number": 12,
+      "type": "choice",
+      "prompt": "下面哪种状态的进程不存放在内存中？（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "运行态"
+        },
+        {
+          "key": "B",
+          "text": "活动阻塞态"
+        },
+        {
+          "key": "C",
+          "text": "静止就绪"
+        },
+        {
+          "key": "D",
+          "text": "创建态"
+        }
+      ],
+      "answer": "C",
+      "analysis": "静止就绪 = 挂起态，进程在外存中。"
+    },
+    {
+      "id": "OS-OP-013",
+      "section": "单选题",
+      "number": 13,
+      "type": "choice",
+      "prompt": "进程 PCB 中不包含（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "进程标识符"
+        },
+        {
+          "key": "B",
+          "text": "控制原语"
+        },
+        {
+          "key": "C",
+          "text": "进程状态"
+        },
+        {
+          "key": "D",
+          "text": "进程运行时的处理机状态信息"
+        }
+      ],
+      "answer": "B",
+      "analysis": "控制原语是 OS 内核的程序，不属于 PCB 中的数据。"
+    },
+    {
+      "id": "OS-OP-014",
+      "section": "单选题",
+      "number": 14,
+      "type": "choice",
+      "prompt": "申请空白 PCB 并进行初始化，为进程分配空间，是（ ）的工作。",
+      "options": [
+        {
+          "key": "A",
+          "text": "创建原语"
+        },
+        {
+          "key": "B",
+          "text": "终止原语"
+        },
+        {
+          "key": "C",
+          "text": "阻塞原语"
+        },
+        {
+          "key": "D",
+          "text": "唤醒原语"
+        }
+      ],
+      "answer": "A",
+      "analysis": "创建原语：申请 PCB、初始化、分配资源。"
+    },
+    {
+      "id": "OS-OP-015",
+      "section": "单选题",
+      "number": 15,
+      "type": "choice",
+      "prompt": "如果分时操作系统的时间片一定，那么（ ），则响应时间越长。",
+      "options": [
+        {
+          "key": "A",
+          "text": "用户数越少"
+        },
+        {
+          "key": "B",
+          "text": "用户数越多"
+        },
+        {
+          "key": "C",
+          "text": "内存越少"
+        },
+        {
+          "key": "D",
+          "text": "内存越多"
+        }
+      ],
+      "answer": "B",
+      "analysis": "时间片固定 → 用户多 → 每个用户轮转一周越长 → 响应时间越长。"
+    },
+    {
+      "id": "OS-OP-016",
+      "section": "单选题",
+      "number": 16,
+      "type": "choice",
+      "prompt": "在批处理系统中，周转时间是（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "作业运行时间"
+        },
+        {
+          "key": "B",
+          "text": "作业进入系统到完成并退出系统的时间"
+        },
+        {
+          "key": "C",
+          "text": "作业的相对等待时间"
+        },
+        {
+          "key": "D",
+          "text": "作业被调度进入内存到运行完毕的时间"
+        }
+      ],
+      "answer": "B",
+      "analysis": "周转时间 = 完成时间 - 到达时间。\n二、判断题（共 9 题，每题 1 分）"
+    },
+    {
+      "id": "OS-OP-017",
+      "section": "判断题",
+      "number": 17,
+      "type": "choice",
+      "prompt": "分时操作系统利用时钟系统把 CPU 时间分成多个时间片，每道并发程序轮流执行一个时间片。",
+      "options": [
+        {
+          "key": "A",
+          "text": "正确"
+        },
+        {
+          "key": "B",
+          "text": "错误"
+        }
+      ],
+      "answer": "A",
+      "analysis": "分时 OS 的核心机制。"
+    },
+    {
+      "id": "OS-OP-018",
+      "section": "判断题",
+      "number": 18,
+      "type": "choice",
+      "prompt": "分时操作系统出现主要是解决多道批处理系统缺乏交互性的缺点，使用户使用更方便。",
+      "options": [
+        {
+          "key": "A",
+          "text": "正确"
+        },
+        {
+          "key": "B",
+          "text": "错误"
+        }
+      ],
+      "answer": "A",
+      "analysis": "分时 OS 的设计初衷。"
+    },
+    {
+      "id": "OS-OP-019",
+      "section": "判断题",
+      "number": 19,
+      "type": "choice",
+      "prompt": "操作系统只能设置一个阻塞队列，放置所有处于阻塞状态的进程。",
+      "options": [
+        {
+          "key": "A",
+          "text": "正确"
+        },
+        {
+          "key": "B",
+          "text": "错误"
+        }
+      ],
+      "answer": "B",
+      "analysis": "通常按事件类型分多个阻塞队列（I/O 队列、信号量队列等）。"
+    },
+    {
+      "id": "OS-OP-020",
+      "section": "判断题",
+      "number": 20,
+      "type": "choice",
+      "prompt": "线程出现后，线程是操作系统进行资源分配的基本单位。（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "正确"
+        },
+        {
+          "key": "B",
+          "text": "错误"
+        }
+      ],
+      "answer": "B",
+      "analysis": "资源分配的基本单位仍是进程；线程是调度的基本单位。"
+    },
+    {
+      "id": "OS-OP-021",
+      "section": "判断题",
+      "number": 21,
+      "type": "choice",
+      "prompt": "系统调用是操作系统提供的用户接口，属于程序级接口，供用户和其他系统程序调用。（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "正确"
+        },
+        {
+          "key": "B",
+          "text": "错误"
+        }
+      ],
+      "answer": "A",
+      "analysis": "系统调用是程序级接口。"
+    },
+    {
+      "id": "OS-OP-022",
+      "section": "判断题",
+      "number": 22,
+      "type": "choice",
+      "prompt": "在一个单 CPU 系统中，若有 5 个用户进程，假设当前系统为用户态，则处于就绪状态的用户进程最多有 4 个，最少有 0 个。",
+      "options": [
+        {
+          "key": "A",
+          "text": "正确"
+        },
+        {
+          "key": "B",
+          "text": "错误"
+        }
+      ],
+      "answer": "A",
+      "analysis": "单 CPU + 用户态：1 个在运行，剩下 4 个最多都处于就绪；最少 0 个（全阻塞或运行）。"
+    },
+    {
+      "id": "OS-OP-023",
+      "section": "判断题",
+      "number": 23,
+      "type": "choice",
+      "prompt": "暂时移出内存的进程处于挂起状态，被挂起的进程也可以被调度执行。",
+      "options": [
+        {
+          "key": "A",
+          "text": "正确"
+        },
+        {
+          "key": "B",
+          "text": "错误"
+        }
+      ],
+      "answer": "B",
+      "analysis": "挂起进程不在内存，不可被调度执行。"
+    },
+    {
+      "id": "OS-OP-024",
+      "section": "判断题",
+      "number": 24,
+      "type": "choice",
+      "prompt": "创建原语为进程创建 PCB，分配包括 CPU 在内的所有资源，做好运行准备。",
+      "options": [
+        {
+          "key": "A",
+          "text": "正确"
+        },
+        {
+          "key": "B",
+          "text": "错误"
+        }
+      ],
+      "answer": "B",
+      "analysis": "创建原语分配除 CPU 外的所有资源；CPU 在调度时分。"
+    },
+    {
+      "id": "OS-OP-025",
+      "section": "判断题",
+      "number": 25,
+      "type": "choice",
+      "prompt": "多道批处理系统中，多个作业完成的先后顺序与他们进入内存的顺序是对应的。",
+      "options": [
+        {
+          "key": "A",
+          "text": "正确"
+        },
+        {
+          "key": "B",
+          "text": "错误"
+        }
+      ],
+      "answer": "B",
+      "analysis": "多道批处理按调度算法选作业，完成顺序与进入内存顺序无关。\n第 5 题（单选）：你的答案 D → 正确答案 A\n第 12 题（单选）：你的答案 D → 正确答案 C"
+    }
+  ]
+}

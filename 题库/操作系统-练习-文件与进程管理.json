@@ -1,0 +1,906 @@
+{
+  "meta": {
+    "title": "文件与进程管理练习",
+    "source": "操作系统 · 文件与进程管理",
+    "count": 35
+  },
+  "questions": [
+    {
+      "id": "OS-FP-001",
+      "section": "单选题",
+      "number": 1,
+      "type": "choice",
+      "prompt": "在文件系统中，索引文件结构采取的存取方式是（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "顺序存取"
+        },
+        {
+          "key": "B",
+          "text": "随机存取"
+        },
+        {
+          "key": "C",
+          "text": "按键存取"
+        }
+      ],
+      "answer": "B",
+      "analysis": "索引文件通过索引表可直接定位任意物理块，支持随机存取。"
+    },
+    {
+      "id": "OS-FP-002",
+      "section": "单选题",
+      "number": 2,
+      "type": "choice",
+      "prompt": "文件系统为每个文件另建立一张指示逻辑记录和物理块之间的对应关系表；由此表和文件本身构成的文件是（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "顺序文件"
+        },
+        {
+          "key": "B",
+          "text": "链接文件"
+        },
+        {
+          "key": "C",
+          "text": "索引文件"
+        },
+        {
+          "key": "D",
+          "text": "逻辑文件"
+        }
+      ],
+      "answer": "C",
+      "analysis": "索引文件由索引表+文件本体组成。"
+    },
+    {
+      "id": "OS-FP-003",
+      "section": "单选题",
+      "number": 3,
+      "type": "choice",
+      "prompt": "文件的存取方法依赖于（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "文件的物理结构"
+        },
+        {
+          "key": "B",
+          "text": "存放文件的存储设备的特性"
+        },
+        {
+          "key": "C",
+          "text": "A 和 B"
+        },
+        {
+          "key": "D",
+          "text": "文件的逻辑结构"
+        }
+      ],
+      "answer": "C",
+      "analysis": "存取方式受物理结构与设备特性双重影响。"
+    },
+    {
+      "id": "OS-FP-004",
+      "section": "单选题",
+      "number": 4,
+      "type": "choice",
+      "prompt": "文件的存储管理实际上是对（ ）的管理。",
+      "options": [
+        {
+          "key": "A",
+          "text": "内存空间"
+        },
+        {
+          "key": "B",
+          "text": "外部存储空间"
+        },
+        {
+          "key": "C",
+          "text": "逻辑存贮空间"
+        },
+        {
+          "key": "D",
+          "text": "物理存储空间"
+        }
+      ],
+      "answer": "B",
+      "analysis": "文件存在外存，管理对象是外部存储空间。"
+    },
+    {
+      "id": "OS-FP-005",
+      "section": "单选题",
+      "number": 5,
+      "type": "choice",
+      "prompt": "文件系统中，设立打开文件 (open) 系统功能调用的基本操作是（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "把文件信息从辅存读到内存"
+        },
+        {
+          "key": "B",
+          "text": "把文件的控制管理信息从辅存读到内存"
+        },
+        {
+          "key": "C",
+          "text": "把磁盘的超级块从辅存读到内存"
+        },
+        {
+          "key": "D",
+          "text": "把文件的 FAT 表信息从辅存读到内存"
+        }
+      ],
+      "answer": "B",
+      "analysis": "open 读入的是文件控制块（FCB）信息，不直接读文件内容。"
+    },
+    {
+      "id": "OS-FP-006",
+      "section": "单选题",
+      "number": 6,
+      "type": "choice",
+      "prompt": "如果文件系统中两个文件重名，不应采用（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "单级目录结构"
+        },
+        {
+          "key": "B",
+          "text": "两级目录结构"
+        },
+        {
+          "key": "C",
+          "text": "树形目录结构"
+        },
+        {
+          "key": "D",
+          "text": "多级目录结构"
+        }
+      ],
+      "answer": "A",
+      "analysis": "单级目录要求文件名全局唯一，不支持重名。"
+    },
+    {
+      "id": "OS-FP-007",
+      "section": "单选题",
+      "number": 7,
+      "type": "choice",
+      "prompt": "下列选项中，可用于文件系统管理空闲磁盘块的数据结构是（ ）。[2019 年 408 统考] Ⅰ. 位图 Ⅱ. 索引节点 Ⅲ. 空闲磁盘块链 Ⅳ. 文件分配表（FAT）",
+      "options": [
+        {
+          "key": "A",
+          "text": "仅Ⅰ、Ⅱ"
+        },
+        {
+          "key": "B",
+          "text": "仅Ⅰ、Ⅲ、Ⅳ"
+        },
+        {
+          "key": "C",
+          "text": "仅Ⅰ、Ⅲ"
+        },
+        {
+          "key": "D",
+          "text": "仅Ⅱ、Ⅲ、Ⅳ"
+        }
+      ],
+      "answer": "B",
+      "analysis": "位图、空闲块链、FAT 都可管理空闲块；inode 不负责全局空闲块管理。"
+    },
+    {
+      "id": "OS-FP-008",
+      "section": "单选题",
+      "number": 8,
+      "type": "choice",
+      "prompt": "逻辑文件是（ ）的文件组织形式。",
+      "options": [
+        {
+          "key": "A",
+          "text": "在外部设备上"
+        },
+        {
+          "key": "B",
+          "text": "从用户观点看"
+        },
+        {
+          "key": "C",
+          "text": "虚拟存储"
+        },
+        {
+          "key": "D",
+          "text": "目录"
+        }
+      ],
+      "answer": "B",
+      "analysis": "逻辑文件是用户视角的组织形式。"
+    },
+    {
+      "id": "OS-FP-009",
+      "section": "单选题",
+      "number": 9,
+      "type": "choice",
+      "prompt": "操作系统的文件系统（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "包括负责管理文件的一组系统软件"
+        },
+        {
+          "key": "B",
+          "text": "包括被管理的对象，即文件"
+        },
+        {
+          "key": "C",
+          "text": "A 和 B"
+        },
+        {
+          "key": "D",
+          "text": "仅包括数据"
+        }
+      ],
+      "answer": "C",
+      "analysis": "文件系统 = 管理软件 + 被管文件。"
+    },
+    {
+      "id": "OS-FP-010",
+      "section": "单选题",
+      "number": 10,
+      "type": "choice",
+      "prompt": "文件系统创建了一个单级目录结构，这种结构存在（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "一个目录文件"
+        },
+        {
+          "key": "B",
+          "text": "一个文件目录"
+        },
+        {
+          "key": "C",
+          "text": "逻辑结构"
+        },
+        {
+          "key": "D",
+          "text": "逻辑空间"
+        }
+      ],
+      "answer": "B",
+      "analysis": "单级目录核心是一张统一的文件目录表。"
+    },
+    {
+      "id": "OS-FP-011",
+      "section": "单选题",
+      "number": 11,
+      "type": "choice",
+      "prompt": "文件系统采用二级文件目录可以（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "缩短访问存储器的时间"
+        },
+        {
+          "key": "B",
+          "text": "实现文件共享"
+        },
+        {
+          "key": "C",
+          "text": "节省内存空间"
+        },
+        {
+          "key": "D",
+          "text": "解决不同用户间的文件命名冲突"
+        }
+      ],
+      "answer": "D",
+      "analysis": "二级目录按用户区分，解决命名冲突。"
+    },
+    {
+      "id": "OS-FP-012",
+      "section": "单选题",
+      "number": 12,
+      "type": "choice",
+      "prompt": "某软盘有 40 个磁道，磁头从一个磁道移至另一个磁道需要 5ms。文件在磁盘上非连续存放，逻辑上相邻数据块的平均距离为 10 个磁道，每块的旋转延迟时间及传输时间分别为 100ms 和 25ms，则读取一个 100 块的文件需要（ ）时间。",
+      "options": [
+        {
+          "key": "A",
+          "text": "17500ms"
+        },
+        {
+          "key": "B",
+          "text": "15000ms"
+        },
+        {
+          "key": "C",
+          "text": "5000ms"
+        },
+        {
+          "key": "D",
+          "text": "25000ms"
+        }
+      ],
+      "answer": "A",
+      "analysis": "单块时间 = 10×5+100+25=175ms；100 块共 17500ms。"
+    },
+    {
+      "id": "OS-FP-013",
+      "section": "单选题",
+      "number": 13,
+      "type": "choice",
+      "prompt": "通过（ ）表示磁盘上每一磁盘块的唯一地址。",
+      "options": [
+        {
+          "key": "A",
+          "text": "柱面号、扇区号"
+        },
+        {
+          "key": "B",
+          "text": "磁头号、扇区号"
+        },
+        {
+          "key": "C",
+          "text": "柱面号、磁头号"
+        },
+        {
+          "key": "D",
+          "text": "柱面号、磁头号、扇区号"
+        }
+      ],
+      "answer": "D",
+      "analysis": "磁盘块地址 = 柱面号+磁头号+扇区号。"
+    },
+    {
+      "id": "OS-FP-014",
+      "section": "单选题",
+      "number": 14,
+      "type": "choice",
+      "prompt": "在有直接存取需求和文件长度动态增长的情况下，宜选择下列哪种文件形式（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "索引文件"
+        },
+        {
+          "key": "B",
+          "text": "顺序文件"
+        },
+        {
+          "key": "C",
+          "text": "链接文件"
+        },
+        {
+          "key": "D",
+          "text": "库文件"
+        }
+      ],
+      "answer": "A",
+      "analysis": "索引文件支持直接存取，扩容方便。"
+    },
+    {
+      "id": "OS-FP-015",
+      "section": "单选题",
+      "number": 15,
+      "type": "choice",
+      "prompt": "文件的逻辑组织将文件分为记录式文件和（ ）文件",
+      "options": [
+        {
+          "key": "A",
+          "text": "索引文件"
+        },
+        {
+          "key": "B",
+          "text": "流式文件"
+        },
+        {
+          "key": "C",
+          "text": "字符文件"
+        },
+        {
+          "key": "D",
+          "text": "读写文件"
+        }
+      ],
+      "answer": "B",
+      "analysis": "逻辑组织两类：记录式 + 流式。"
+    },
+    {
+      "id": "OS-FP-016",
+      "section": "单选题",
+      "number": 16,
+      "type": "choice",
+      "prompt": "文件逻辑结构中无结构文件的含义是（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "变长记录文件"
+        },
+        {
+          "key": "B",
+          "text": "索引文件"
+        },
+        {
+          "key": "C",
+          "text": "流式文件"
+        },
+        {
+          "key": "D",
+          "text": "索引顺序文件"
+        }
+      ],
+      "answer": "C",
+      "analysis": "无结构 = 流式。"
+    },
+    {
+      "id": "OS-FP-017",
+      "section": "单选题",
+      "number": 17,
+      "type": "choice",
+      "prompt": "对于三级文件目录，若主目录、用户目录及子目录各级分别最多有 3、4、5 个目录项，则为找到一指定文件的目录项（绝对路径名方式），最多只需检索的目录项数为（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "12个"
+        },
+        {
+          "key": "B",
+          "text": "7个"
+        },
+        {
+          "key": "C",
+          "text": "23个"
+        },
+        {
+          "key": "D",
+          "text": "60个"
+        }
+      ],
+      "answer": "A",
+      "analysis": "3+4+5=12。"
+    },
+    {
+      "id": "OS-FP-018",
+      "section": "单选题",
+      "number": 18,
+      "type": "choice",
+      "prompt": "文件的逻辑结构按是否有结构划分，文件主要有两类：（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "流式文件和记录式文件"
+        },
+        {
+          "key": "B",
+          "text": "索引文件和随机文件"
+        },
+        {
+          "key": "C",
+          "text": "永久文件和临时文件"
+        },
+        {
+          "key": "D",
+          "text": "只读文件和读写文件"
+        }
+      ],
+      "answer": "A",
+      "analysis": "流式 + 记录式。"
+    },
+    {
+      "id": "OS-FP-019",
+      "section": "单选题",
+      "number": 19,
+      "type": "choice",
+      "prompt": "文件系统实现按名存取主要是靠（ ）来实现的。",
+      "options": [
+        {
+          "key": "A",
+          "text": "查找位示图"
+        },
+        {
+          "key": "B",
+          "text": "查找文件目录"
+        },
+        {
+          "key": "C",
+          "text": "查找作业表"
+        },
+        {
+          "key": "D",
+          "text": "地址转换机构"
+        }
+      ],
+      "answer": "B",
+      "analysis": "按名存取靠文件目录。"
+    },
+    {
+      "id": "OS-FP-020",
+      "section": "单选题",
+      "number": 20,
+      "type": "choice",
+      "prompt": "在文件系统中，用户以（ ）方式直接使用外存。",
+      "options": [
+        {
+          "key": "A",
+          "text": "逻辑地址"
+        },
+        {
+          "key": "B",
+          "text": "物理地址"
+        },
+        {
+          "key": "C",
+          "text": "名字空间"
+        },
+        {
+          "key": "D",
+          "text": "虚拟地址"
+        }
+      ],
+      "answer": "C",
+      "analysis": "用户通过文件名（名字空间）访问外存。"
+    },
+    {
+      "id": "OS-FP-021",
+      "section": "单选题",
+      "number": 21,
+      "type": "choice",
+      "prompt": "下列（ ）物理结构文件不便于文件的扩充。",
+      "options": [
+        {
+          "key": "A",
+          "text": "顺序文件"
+        },
+        {
+          "key": "B",
+          "text": "链接文件"
+        },
+        {
+          "key": "C",
+          "text": "索引文件"
+        },
+        {
+          "key": "D",
+          "text": "多级索引文件"
+        }
+      ],
+      "answer": "A",
+      "analysis": "顺序文件连续分配，扩容需整体迁移。"
+    },
+    {
+      "id": "OS-FP-022",
+      "section": "单选题",
+      "number": 22,
+      "type": "choice",
+      "prompt": "由字符序列组成，文件内的信息不再划分结构，这是指（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "流式文件"
+        },
+        {
+          "key": "B",
+          "text": "记录式文件"
+        },
+        {
+          "key": "C",
+          "text": "连续文件"
+        },
+        {
+          "key": "D",
+          "text": "有序文件"
+        }
+      ],
+      "answer": "A",
+      "analysis": "流式文件的定义。"
+    },
+    {
+      "id": "OS-FP-023",
+      "section": "单选题",
+      "number": 23,
+      "type": "choice",
+      "prompt": "文件系统中在创建一个文件时，为它建立一个（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "文件目录"
+        },
+        {
+          "key": "B",
+          "text": "目录文件"
+        },
+        {
+          "key": "C",
+          "text": "逻辑结构"
+        },
+        {
+          "key": "D",
+          "text": "逻辑空间"
+        }
+      ],
+      "answer": "A",
+      "analysis": "创建文件时建立文件目录项。"
+    },
+    {
+      "id": "OS-FP-024",
+      "section": "单选题",
+      "number": 24,
+      "type": "choice",
+      "prompt": "FAT 文件系统支持的文件物理结构是（ ）结构。",
+      "options": [
+        {
+          "key": "A",
+          "text": "顺序文件"
+        },
+        {
+          "key": "B",
+          "text": "链接文件"
+        },
+        {
+          "key": "C",
+          "text": "索引文件"
+        }
+      ],
+      "answer": "B",
+      "analysis": "FAT 是隐式链接结构。"
+    },
+    {
+      "id": "OS-FP-025",
+      "section": "单选题",
+      "number": 25,
+      "type": "choice",
+      "prompt": "在 UNIX/Linux 操作系统中，把输入/输出设备看作是（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "普通文件"
+        },
+        {
+          "key": "B",
+          "text": "目录文件"
+        },
+        {
+          "key": "C",
+          "text": "索引文件"
+        },
+        {
+          "key": "D",
+          "text": "特殊文件"
+        }
+      ],
+      "answer": "D",
+      "analysis": "UNIX/Linux 把设备视为特殊文件（设备文件）。"
+    },
+    {
+      "id": "OS-FP-026",
+      "section": "单选题",
+      "number": 26,
+      "type": "choice",
+      "prompt": "假设在系统中一个文件通过链接共享方式有两个名字，它与一个文件保存有两个副本的区别是（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "前者比后者所占用的存储空间更大"
+        },
+        {
+          "key": "B",
+          "text": "前者需要两个目录项，后者只需要一个目录项"
+        },
+        {
+          "key": "C",
+          "text": "前者存取文件的速度快，后者存取文件的速度慢"
+        },
+        {
+          "key": "D",
+          "text": "前者改变与某个名字相联系的文件时，与另一个名字相联系的文件也改变；后者的另一个副本不改变"
+        }
+      ],
+      "answer": "D",
+      "analysis": "硬链接共享同一文件实体；副本是独立存储。"
+    },
+    {
+      "id": "OS-FP-027",
+      "section": "单选题",
+      "number": 27,
+      "type": "choice",
+      "prompt": "文件系统采用多级目录结构后，对于不同用户的文件，其文件名（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "应该相同"
+        },
+        {
+          "key": "B",
+          "text": "应该不同"
+        },
+        {
+          "key": "C",
+          "text": "可以相同，也可以不同"
+        },
+        {
+          "key": "D",
+          "text": "受系统约束"
+        }
+      ],
+      "answer": "C",
+      "analysis": "不同目录可重名。"
+    },
+    {
+      "id": "OS-FP-028",
+      "section": "单选题",
+      "number": 28,
+      "type": "choice",
+      "prompt": "对记录式文件，操作系统为用户存取文件信息的最小单位是（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "字符"
+        },
+        {
+          "key": "B",
+          "text": "数据项"
+        },
+        {
+          "key": "C",
+          "text": "记录"
+        },
+        {
+          "key": "D",
+          "text": "文件"
+        }
+      ],
+      "answer": "C",
+      "analysis": "记录式文件以记录为最小单位。"
+    },
+    {
+      "id": "OS-FP-029",
+      "section": "判断题",
+      "number": 29,
+      "type": "choice",
+      "prompt": "文件系统的任务是对用户文件和系统文件等软件资源进行管理，以方便用户使用，并保证文件的安全。（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "对"
+        },
+        {
+          "key": "B",
+          "text": "错"
+        }
+      ],
+      "answer": "A",
+      "analysis": "文件系统的核心任务。"
+    },
+    {
+      "id": "OS-FP-030",
+      "section": "判断题",
+      "number": 30,
+      "type": "choice",
+      "prompt": "如果把文件视为有序的字符集合，在其内部不再对信息进行组织划分，那么这种文件的逻辑结构被称为\"流式文件\"。（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "对"
+        },
+        {
+          "key": "B",
+          "text": "错"
+        }
+      ],
+      "answer": "A",
+      "analysis": "流式文件的定义。"
+    },
+    {
+      "id": "OS-FP-031",
+      "section": "判断题",
+      "number": 31,
+      "type": "choice",
+      "prompt": "采用连续分配的顺序结构文件对文件随机存取时必须按指针进行，效率较低。（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "对"
+        },
+        {
+          "key": "B",
+          "text": "错"
+        }
+      ],
+      "answer": "B",
+      "analysis": "顺序文件物理块连续，可直接按偏移寻址，随机存取高效；按指针寻址的是隐式链接。"
+    },
+    {
+      "id": "OS-FP-032",
+      "section": "判断题",
+      "number": 32,
+      "type": "choice",
+      "prompt": "文件系统的主要功能是\"按名存取\"，所以从磁盘读数据的工作由文件系统完成。（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "对"
+        },
+        {
+          "key": "B",
+          "text": "错"
+        }
+      ],
+      "answer": "B",
+      "analysis": "底层 I/O 由设备驱动完成。"
+    },
+    {
+      "id": "OS-FP-033",
+      "section": "判断题",
+      "number": 33,
+      "type": "choice",
+      "prompt": "文件保护是指防止硬件偶然的故障或人为破坏所引起的文件信息丢失或泄露。（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "对"
+        },
+        {
+          "key": "B",
+          "text": "错"
+        }
+      ],
+      "answer": "A",
+      "analysis": "文件保护的目标。"
+    },
+    {
+      "id": "OS-FP-034",
+      "section": "单选题",
+      "number": 34,
+      "type": "choice",
+      "prompt": "下面哪种状态的进程不存放在内存中？（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "运行态"
+        },
+        {
+          "key": "B",
+          "text": "活动阻塞态"
+        },
+        {
+          "key": "C",
+          "text": "静止就绪"
+        },
+        {
+          "key": "D",
+          "text": "创建态"
+        }
+      ],
+      "answer": "C",
+      "analysis": "静止就绪 = 挂起，在外存。"
+    },
+    {
+      "id": "OS-FP-035",
+      "section": "单选题",
+      "number": 35,
+      "type": "choice",
+      "prompt": "进程 PCB 中不包含（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "进程标识符"
+        },
+        {
+          "key": "B",
+          "text": "控制原语"
+        },
+        {
+          "key": "C",
+          "text": "进程状态"
+        },
+        {
+          "key": "D",
+          "text": "进程运行时的处理机状态信息"
+        }
+      ],
+      "answer": "B",
+      "analysis": "控制原语是 OS 程序，不在 PCB 中。"
+    }
+  ]
+}

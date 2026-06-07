@@ -1,0 +1,225 @@
+{
+  "meta": {
+    "title": "信号量课堂作业",
+    "source": "操作系统 · 信号量",
+    "count": 8
+  },
+  "questions": [
+    {
+      "id": "OS-SEM-001",
+      "section": "单选题",
+      "number": 1,
+      "type": "choice",
+      "prompt": "如果信号量 S 的值是 0，此时进程 A 执行 wait(S) 操作，那么进程 A 会（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "继续运行"
+        },
+        {
+          "key": "B",
+          "text": "进入阻塞态，让出CPU"
+        },
+        {
+          "key": "C",
+          "text": "进入就绪态，让出CPU"
+        },
+        {
+          "key": "D",
+          "text": "继续运行，并唤醒S队列头上的等待进程"
+        }
+      ],
+      "answer": "B",
+      "analysis": "S=0 时执行 P 操作，S--→-1<0，进程阻塞并加入等待队列。"
+    },
+    {
+      "id": "OS-SEM-002",
+      "section": "单选题",
+      "number": 2,
+      "type": "choice",
+      "prompt": "为了管理某互斥资源，设置了一个信号量，初始值为 3，当前信号量值为 1，则等待该资源的进程数为（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "0"
+        },
+        {
+          "key": "B",
+          "text": "1"
+        },
+        {
+          "key": "C",
+          "text": "2"
+        },
+        {
+          "key": "D",
+          "text": "3"
+        }
+      ],
+      "answer": "A",
+      "analysis": "互斥信号量 S≥0 表示资源可用，无等待；只有 S<0 时才有 |S| 个等待。S=1≥0，所以等待=0。"
+    },
+    {
+      "id": "OS-SEM-003",
+      "section": "单选题",
+      "number": 3,
+      "type": "choice",
+      "prompt": "若信号量 S 初值为 2，当前值为 -1，则表示有（ ）个等待进程。",
+      "options": [
+        {
+          "key": "A",
+          "text": "0个"
+        },
+        {
+          "key": "B",
+          "text": "1个"
+        },
+        {
+          "key": "C",
+          "text": "2个"
+        },
+        {
+          "key": "D",
+          "text": "3个"
+        }
+      ],
+      "answer": "B",
+      "analysis": "S<0 时，等待进程数 = |S| = 1。"
+    },
+    {
+      "id": "OS-SEM-004",
+      "section": "单选题",
+      "number": 4,
+      "type": "choice",
+      "prompt": "有 3 个进程共享一程序段，每次最多允许 2 个进程进入，则信号量的取值范围是（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "2,1,0,-1"
+        },
+        {
+          "key": "B",
+          "text": "3,2,1,0"
+        },
+        {
+          "key": "C",
+          "text": "2,1,0,-1,-2"
+        },
+        {
+          "key": "D",
+          "text": "1,0,-1,-2"
+        }
+      ],
+      "answer": "A",
+      "analysis": "初值 2，每进入 1 个 -1，最少进入 2 时 S=0；超 2 时阻塞，S=-1。所以范围 2,1,0,-1。"
+    },
+    {
+      "id": "OS-SEM-005",
+      "section": "单选题",
+      "number": 5,
+      "type": "choice",
+      "prompt": "signal 原语对信号量 S 做加 1 运算后，（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "若 S<0 进程继续执行"
+        },
+        {
+          "key": "B",
+          "text": "若 S<0 要唤醒一个就绪进"
+        },
+        {
+          "key": "C",
+          "text": "若 S≤0 要唤醒一个等待进程"
+        },
+        {
+          "key": "D",
+          "text": "若 S≤0 要唤醒一个就绪进程"
+        }
+      ],
+      "answer": "C",
+      "analysis": "V 操作后 S≤0 表示有等待进程，需要唤醒一个。"
+    },
+    {
+      "id": "OS-SEM-006",
+      "section": "单选题",
+      "number": 6,
+      "type": "choice",
+      "prompt": "正在运行的进程在信号量 S 上做 P 操作后，当 S<0 时，进程进入信号量的（ ）",
+      "options": [
+        {
+          "key": "A",
+          "text": "等待队列"
+        },
+        {
+          "key": "B",
+          "text": "提交队列"
+        },
+        {
+          "key": "C",
+          "text": "后备队列"
+        },
+        {
+          "key": "D",
+          "text": "就绪队列"
+        }
+      ],
+      "answer": "A",
+      "analysis": "P 操作 S<0 时，进程阻塞，加入等待队列。"
+    },
+    {
+      "id": "OS-SEM-007",
+      "section": "单选题",
+      "number": 7,
+      "type": "choice",
+      "prompt": "进程 PA 不断向管道写数据，PB 从管道读数据并加工处理，若用信号量保证并发正确性，则需要定义（ ）个信号量。",
+      "options": [
+        {
+          "key": "A",
+          "text": "1个信号量，初值为0"
+        },
+        {
+          "key": "B",
+          "text": "2个信号量，初值为0、1"
+        },
+        {
+          "key": "C",
+          "text": "3个信号量，初值为0、0、1"
+        },
+        {
+          "key": "D",
+          "text": "4个信号量，初值为0、0、1、1"
+        }
+      ],
+      "answer": "B",
+      "analysis": "empty=1(空位)，full=0(数据)；写前 P(empty) V(full)；读前 P(full) V(empty)。"
+    },
+    {
+      "id": "OS-SEM-008",
+      "section": "单选题",
+      "number": 8,
+      "type": "choice",
+      "prompt": "信号量 S 初值 5，调用 10 次 wait 和 8 次 signal 后，S 的值是（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "2"
+        },
+        {
+          "key": "B",
+          "text": "3"
+        },
+        {
+          "key": "C",
+          "text": "7"
+        },
+        {
+          "key": "D",
+          "text": "13"
+        }
+      ],
+      "answer": "B",
+      "analysis": "S = 5 - 10 + 8 = 3。\n第 2 题（单选）：你的答案 B → 正确答案 A"
+    }
+  ]
+}

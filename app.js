@@ -143,8 +143,10 @@ function buildGroups() {
 function orderBanksForSubject(subject, banks) {
   if (subject !== "操作系统") return banks;
   const review = banks.filter(b => b.id === "os-review" || b.title === "综合复习题库");
-  const rest = banks.filter(b => !(b.id === "os-review" || b.title === "综合复习题库"));
-  return [...rest, ...review];
+  const chapters = banks.filter(b => /^os-ch\d+$/.test(b.id));
+  const practice = banks.filter(b => b.id?.startsWith("os-practice-"));
+  const rest = banks.filter(b => !/^os-ch\d+$/.test(b.id) && !b.id?.startsWith("os-practice-") && !(b.id === "os-review" || b.title === "综合复习题库"));
+  return [...chapters, ...review, ...practice, ...rest];
 }
 function allBanks() { return groups.flatMap(g => g.banks); }
 function bankById(id) { return allBanks().find(b => b.id === id) || null; }
@@ -237,14 +239,25 @@ function renderBankPicker() {
     const items = g.banks.map(b => {
       const active = b.id === currentBankId;
       const count = (b.questions || []).length;
+      const progress = bankProgress(b);
       const del = g.builtin ? "" : `<span class="bank-del" data-del="${escapeAttr(b.id)}" role="button" title="删除题库">✕</span>`;
-      return `<button class="bank-item${active ? " active" : ""}" type="button" data-bank="${escapeAttr(b.id)}"><span class="bank-item-title">${escapeHtml(b.title)}</span><span class="bank-count">${count}</span>${del}</button>`;
+      return `<button class="bank-item${active ? " active" : ""}" type="button" data-bank="${escapeAttr(b.id)}" style="--bank-energy:${progress.ratio}%"><span class="bank-energy" aria-hidden="true"></span><span class="bank-item-title">${escapeHtml(b.title)}</span><span class="bank-count" title="已刷 ${progress.done} / 100">${count}</span>${del}</button>`;
     }).join("");
     return `<div class="bank-group${open ? " open" : ""}" data-subject="${escapeAttr(g.subject)}">
       <button class="bank-group-head" type="button"><span class="bank-group-name">${escapeHtml(g.subject)}</span><span class="bank-group-arrow">▾</span></button>
       <div class="bank-group-body">${items}</div>
     </div>`;
   }).join("");
+}
+function bankProgress(b) {
+  const total = 100;
+  try {
+    const state = b.id === currentBankId ? app : loadState(b.id);
+    const done = Object.values(state.records || {}).filter(rec => rec && (rec.revealed || rec.mastered !== null || rec.correct !== null)).length;
+    return { done, ratio: Math.max(0, Math.min(100, Math.round(done / total * 100))) };
+  } catch {
+    return { done: 0, ratio: 0 };
+  }
 }
 window.importQuestionBank = importQuestionBank;
 
@@ -305,8 +318,8 @@ function render() {
   const list = filteredQuestions();
   if (app.index >= list.length) app.index = Math.max(0, list.length - 1);
   renderStats(); renderMode(); renderNav(list); renderProgressSegments(list);
-  if (!list.length) { renderEmpty(); saveState(); return; }
-  renderQuestion(list[app.index], list); saveState();
+  if (!list.length) { renderEmpty(); saveState(); renderBankPicker(); return; }
+  renderQuestion(list[app.index], list); saveState(); renderBankPicker();
 }
 const MOOD_WORDS = ["嗯…","还行","不错","可以","挺好","很强","牛啊","太强了","起飞!","无敌!","封神!"];
 function getMoodWord(count) {
@@ -792,10 +805,16 @@ function bindEvents() {
 let answeredCount = 0;
 let pendingMascot = null;
 let last15Results = [];
+// GPT生成吉祥物台词
+async function generateMascotLines(role, accuracy, isDark) {
+  // 线上静态页不能暴露第三方 API Key；需要动态台词时应改为后端代理。
+  return null;
+}
+
 const MASCOT_CONFIG = {
   boobo: {
-    image: "./assets/boobo-front.webp",
-    darkImage: "./assets/boobo-dark.webp",
+    image: "./assets/boobo-dark.webp",
+    darkImage: "./assets/boobo-front.webp",
     lines: [
       "满分节奏！你是我的神！",        // ≥90%
       "太强了，继续保持这个手感。",      // ≥80%
@@ -816,8 +835,8 @@ const MASCOT_CONFIG = {
     ]
   },
   gru: {
-    image: "./assets/gru-front.webp",
-    darkImage: "./assets/gru-dark.webp",
+    image: "./assets/gru-dark.webp",
+    darkImage: "./assets/gru-front.webp",
     lines: [
       "无敌！这就是王者的实力！",
       "漂亮，这波节奏拉满了。",
@@ -838,8 +857,8 @@ const MASCOT_CONFIG = {
     ]
   },
   mimo: {
-    image: "./assets/mimo-front.webp",
-    darkImage: "./assets/mimo-dark.webp",
+    image: "./assets/mimo-dark.webp",
+    darkImage: "./assets/mimo-front.webp",
     lines: [
       "全对！今天状态爆棚！",
       "很好，一步一步都在掌控中。",
@@ -860,8 +879,8 @@ const MASCOT_CONFIG = {
     ]
   },
   waiwai: {
-    image: "./assets/waiwai-front.webp",
-    darkImage: "./assets/waiwai-dark.webp",
+    image: "./assets/waiwai-dark.webp",
+    darkImage: "./assets/waiwai-front.webp",
     lines: [
       "不可思议！满分通过！",
       "想清楚再出手，节奏很好。",
@@ -882,8 +901,8 @@ const MASCOT_CONFIG = {
     ]
   },
   dodo: {
-    image: "./assets/dodo-front.webp",
-    darkImage: "./assets/dodo-dark.webp",
+    image: "./assets/dodo-dark.webp",
+    darkImage: "./assets/dodo-front.webp",
     lines: [
       "起飞！状态前所未有的好！",
       "继续加油，手感越来越好了。",
@@ -1010,7 +1029,7 @@ function createMascotParticles(role) {
     container.appendChild(node);
   }
 }
-function playMascotMoment(role, onComplete) {
+async function playMascotMoment(role, onComplete) {
   const overlay = document.getElementById("mascotOverlay");
   const img = document.getElementById("mascotImg");
   const bubble = document.getElementById("mascotBubble");
@@ -1019,7 +1038,21 @@ function playMascotMoment(role, onComplete) {
   const isDark = document.body.classList.contains("dark");
   overlay.className = `mascot-overlay show role-${role}`;
   img.src = isDark ? (cfg.darkImage || cfg.image) : cfg.image;
-  const lines = (isDark && cfg.darkLines) ? cfg.darkLines : cfg.lines;
+
+  // 计算当前正确率
+  const accuracy = last15Results.length > 0
+    ? last15Results.slice(-10).filter(r => r).length / Math.min(last15Results.length, 10)
+    : 0.5;
+
+  // 尝试GPT生成台词，失败则用默认
+  let lines = (isDark && cfg.darkLines) ? cfg.darkLines : cfg.lines;
+  if (!PERFORMANCE_MODE) {
+    try {
+      const gptLines = await generateMascotLines(role, accuracy, isDark);
+      if (gptLines && gptLines.length > 0) lines = gptLines;
+    } catch (e) { /* use fallback */ }
+  }
+
   bubble.textContent = lines[pickLineIndex()];
   createMascotParticles(role);
   clearTimeout(pendingMascot);
