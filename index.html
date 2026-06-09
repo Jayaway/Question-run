@@ -25,6 +25,8 @@
       <li><strong>Enter / 空格</strong> — 确认提交</li>
       <li><strong>M</strong> — 收藏题目</li>
       <li>⏳ 新增 <strong>考试倒计时</strong>（点击可隐藏）</li>
+      <li>🕐 <strong>24:00 后</strong>刷题自动出现 🔥 卷王标签</li>
+      <li>🔐 站长后台密码：<strong>6666</strong></li>
     </ul>
     <button id="dismissUpdate" class="update-notice-btn">知道了</button>
   </div>
@@ -241,7 +243,7 @@
 
 <script>
 (function() {
-  var NOTICE_VERSION = "v20250609b";
+  var NOTICE_VERSION = "v20250609c";
   if (localStorage.getItem("_update_notice_seen") !== NOTICE_VERSION) {
     var overlay = document.getElementById("updateNotice");
     if (overlay) {
