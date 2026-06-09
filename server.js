@@ -6,6 +6,7 @@ const crypto = require("crypto");
 
 const PORT = Number(process.env.PORT) || 3000;
 const DATA_FILE = path.join(__dirname, "visit-data.json");
+const ANSWER_FILE = path.join(__dirname, "answer-data.json");
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "6666";
 const adminTokens = new Set();
 
@@ -15,6 +16,28 @@ function loadData() {
 }
 function saveData(data) {
   fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
+}
+
+function loadAnswers() {
+  try { return JSON.parse(fs.readFileSync(ANSWER_FILE, "utf8")); }
+  catch { return { answers: [] }; }
+}
+function saveAnswers(data) {
+  fs.writeFileSync(ANSWER_FILE, JSON.stringify(data, null, 2), "utf8");
+}
+
+function getLeaderboard(answers) {
+  const userMap = {};
+  const seen = new Set();
+  answers.forEach(a => {
+    const key = `${a.fp}::${a.qid}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    if (!userMap[a.fp]) userMap[a.fp] = { fp: a.fp, count: 0, lastTs: 0 };
+    userMap[a.fp].count++;
+    if (a.ts > userMap[a.fp].lastTs) userMap[a.fp].lastTs = a.ts;
+  });
+  return Object.values(userMap).sort((a, b) => b.count - a.count).slice(0, 50);
 }
 
 const MIME = {
@@ -48,6 +71,18 @@ function getTodayRange() {
   return { start, end: start + 86400000 };
 }
 
+function getLocationLabel(ip) {
+  if (!ip) return '';
+  if (/^104\.238\.220\./.test(ip)) return '杉达学生';
+  return '';
+}
+
+function getTag(ts) {
+  const h = new Date(ts).getHours();
+  if (h >= 0 && h < 6) return '卷王';
+  return '';
+}
+
 function getStats(visits) {
   const { start, end } = getTodayRange();
   const todayVisits = visits.filter(v => v.ts >= start && v.ts < end);
@@ -70,7 +105,8 @@ function getStats(visits) {
     time: new Date(v.ts).toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit" }),
     page: v.page,
     device: v.uaInfo || "未知",
-    location: v.ip || "未知"
+    location: v.location || v.ip || "未知",
+    tags: v.tags || ""
   }));
 
   const weekly = [];
@@ -138,18 +174,43 @@ const server = http.createServer((req, res) => {
     req.on("end", () => {
       try {
         const { fp, page, referrer } = JSON.parse(body || "{}");
+        const ip = getClientIP(req);
+        const ts = Date.now();
         const data = loadData();
         data.visits.push({
-          ts: Date.now(),
-          ip: getClientIP(req),
+          ts: ts,
+          ip: ip,
           ua: req.headers["user-agent"] || "",
           uaInfo: parseUA(req.headers["user-agent"] || ""),
-          fp: fp || "anon-" + Date.now(),
+          fp: fp || "anon-" + ts,
           page: page || parseReferrer(referrer || req.headers.referer),
-          referrer: referrer || ""
+          referrer: referrer || "",
+          location: getLocationLabel(ip),
+          tags: getTag(ts)
         });
         if (data.visits.length > 50000) data.visits = data.visits.slice(-50000);
         saveData(data);
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(400);
+        res.end(JSON.stringify({ error: e.message }));
+      }
+    });
+    return;
+  }
+
+  if (req.method === "POST" && req.url === "/api/track-answer") {
+    let body = "";
+    req.on("data", c => body += c);
+    req.on("end", () => {
+      try {
+        const { fp, qid } = JSON.parse(body || "{}");
+        if (!fp || !qid) { res.writeHead(400); res.end(JSON.stringify({ error: "missing fp or qid" })); return; }
+        const data = loadAnswers();
+        data.answers.push({ fp: fp, qid: qid, ts: Date.now() });
+        if (data.answers.length > 200000) data.answers = data.answers.slice(-200000);
+        saveAnswers(data);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) {
@@ -170,6 +231,19 @@ const server = http.createServer((req, res) => {
     const data = loadData();
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(JSON.stringify(getStats(data.visits)));
+    return;
+  }
+
+  if (req.method === "GET" && req.url === "/api/leaderboard") {
+    const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    if (!adminTokens.has(token)) {
+      res.writeHead(401, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Unauthorized" }));
+      return;
+    }
+    const data = loadAnswers();
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify(getLeaderboard(data.answers)));
     return;
   }
 

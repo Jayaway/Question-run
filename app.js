@@ -571,6 +571,7 @@ function checkCurrentAnswer() {
   if (correct) { app.streak = (app.streak || 0) + 1; playCorrectSound(); }
   else { app.streak = 0; playWrongSound(); }
   recordAnswer(correct);
+  reportAnswer(q.id);
   render();
   if (correct) { pulseStreak(); flashCorrect(); }
   else { shakeWrong(); }
@@ -782,8 +783,31 @@ function bindEvents() {
   els.memoryInput?.addEventListener("input", e => { const list = filteredQuestions(); const q = list[app.index]; if (!q) return; recordFor(q.id).input = e.target.value; saveState(); });
   els.fillInput?.addEventListener("input", e => { const list = filteredQuestions(); const q = list[app.index]; if (!q) return; recordFor(q.id).input = e.target.value; saveState(); });
   document.addEventListener("keydown", e => {
-    if (e.key === "ArrowLeft") prevQuestion();
-    if (e.key === "ArrowRight") nextQuestion();
+    const tag = (e.target && e.target.tagName) || "";
+    const isInput = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" ||
+      (e.target && e.target.isContentEditable);
+    if (isInput) return;
+
+    const list = filteredQuestions();
+    const q = list[app.index];
+
+    if (e.key === "ArrowLeft") { e.preventDefault(); prevQuestion(); return; }
+    if (e.key === "ArrowRight") { e.preventDefault(); nextQuestion(); return; }
+
+    if (!q) return;
+
+    if (q.type === "choice") {
+      const idxMap = { "1": 0, "2": 1, "3": 2, "4": 3, "a": 0, "b": 1, "c": 2, "d": 3,
+                        "A": 0, "B": 1, "C": 2, "D": 3 };
+      if (e.key in idxMap) {
+        const opt = q.options[idxMap[e.key]];
+        if (opt) { e.preventDefault(); selectChoice(opt.key); return; }
+      }
+    }
+
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handlePrimaryAction(); return; }
+
+    if (e.key === "m" || e.key === "M") { e.preventDefault(); toggleMark(); return; }
   });
   els.questionCard?.addEventListener("touchstart", e => {
     const touch = e.changedTouches?.[0];
@@ -813,8 +837,8 @@ async function generateMascotLines(role, accuracy, isDark) {
 
 const MASCOT_CONFIG = {
   boobo: {
-    image: "./assets/boobo-dark.webp",
-    darkImage: "./assets/boobo-front.webp",
+    image: "./assets/boobo-front.webp",
+    darkImage: "./assets/boobo-dark.webp",
     lines: [
       "满分节奏！你是我的神！",        // ≥90%
       "太强了，继续保持这个手感。",      // ≥80%
@@ -835,8 +859,8 @@ const MASCOT_CONFIG = {
     ]
   },
   gru: {
-    image: "./assets/gru-dark.webp",
-    darkImage: "./assets/gru-front.webp",
+    image: "./assets/gru-front.webp",
+    darkImage: "./assets/gru-dark.webp",
     lines: [
       "无敌！这就是王者的实力！",
       "漂亮，这波节奏拉满了。",
@@ -857,8 +881,8 @@ const MASCOT_CONFIG = {
     ]
   },
   mimo: {
-    image: "./assets/mimo-dark.webp",
-    darkImage: "./assets/mimo-front.webp",
+    image: "./assets/mimo-front.webp",
+    darkImage: "./assets/mimo-dark.webp",
     lines: [
       "全对！今天状态爆棚！",
       "很好，一步一步都在掌控中。",
@@ -879,8 +903,8 @@ const MASCOT_CONFIG = {
     ]
   },
   waiwai: {
-    image: "./assets/waiwai-dark.webp",
-    darkImage: "./assets/waiwai-front.webp",
+    image: "./assets/waiwai-front.webp",
+    darkImage: "./assets/waiwai-dark.webp",
     lines: [
       "不可思议！满分通过！",
       "想清楚再出手，节奏很好。",
@@ -901,8 +925,8 @@ const MASCOT_CONFIG = {
     ]
   },
   dodo: {
-    image: "./assets/dodo-dark.webp",
-    darkImage: "./assets/dodo-front.webp",
+    image: "./assets/dodo-front.webp",
+    darkImage: "./assets/dodo-dark.webp",
     lines: [
       "起飞！状态前所未有的好！",
       "继续加油，手感越来越好了。",
@@ -1006,6 +1030,13 @@ function addOptionRipple(btn) {
   setTimeout(()=>btn.classList.remove("ripple"), 400);
 }
 function recordAnswer(isCorrect) { last15Results.push({ correct: isCorrect }); if (last15Results.length > 15) last15Results.shift(); answeredCount++; }
+function reportAnswer(qid) {
+  try {
+    var fp = localStorage.getItem("_visitor_fp");
+    if (!fp) return;
+    navigator.sendBeacon("/api/track-answer", JSON.stringify({ fp: fp, qid: qid }));
+  } catch(e) {}
+}
 function chooseCheckpointMascot(isCorrect) {
   const total = last15Results.length, correctCount = last15Results.filter(r => r.correct).length;
   const accuracy = total > 0 ? correctCount / total : 0;

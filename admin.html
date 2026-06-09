@@ -190,6 +190,15 @@ body {
 .island-recent-sep { color: #c4b89e; }
 .island-recent-meta { color: #9f927d; font-size: 13px; }
 
+.island-leaderboard-card { margin-top: 20px; }
+.island-lb-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.island-lb-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 16px; background: #f0e8d8; font-weight: 600; color: #725d42; }
+.island-lb-rank { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #e6f9f6; color: #19c8b9; font-size: 13px; font-weight: 900; flex-shrink: 0; }
+.island-lb-rank.top { background: #f5c31c; color: #725d42; }
+.island-lb-fp { flex: 1; font-size: 13px; font-family: monospace; color: #9f927d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.island-lb-count { font-size: 15px; font-weight: 800; color: #794f27; }
+.island-lb-note { text-align: center; padding: 20px; color: #9f927d; font-size: 13px; }
+
 @media (max-width: 700px) {
   .admin-body { padding: 20px 12px 60px; }
   .island-header { flex-direction: column; }
@@ -287,6 +296,14 @@ body {
       <ul id="recentList" class="island-recent-list"></ul>
     </section>
   </div>
+
+  <section class="island-card island-leaderboard-card">
+    <div class="island-card-header">
+      <h3 class="island-card-title">👑 用户做题排行榜</h3>
+      <span class="island-chip">去重统计</span>
+    </div>
+    <ul id="leaderboardList" class="island-lb-list"></ul>
+  </section>
 </div>
 
 <script>
@@ -393,6 +410,7 @@ body {
       : '<li style="padding:20px;color:#9f927d;text-align:center">暂无数据</li>';
 
     drawChart();
+    fetchLeaderboard();
   }
 
   function drawChart() {
@@ -463,6 +481,28 @@ body {
 
     drawLine(data.map(function(d) { return d.uv; }), "#19c8b9");
     drawLine(data.map(function(d) { return d.pv; }), "#f5c31c");
+  }
+
+  function fetchLeaderboard() {
+    if (!authToken) return;
+    fetch("/api/leaderboard", { headers: { Authorization: "Bearer " + authToken } })
+      .then(function(r) { return r.json(); })
+      .then(function(data) {
+        var list = document.getElementById("leaderboardList");
+        if (!list) return;
+        if (!data || !data.length) {
+          list.innerHTML = '<li class="island-lb-note">暂无数据，同学们快来刷题吧～</li>';
+          return;
+        }
+        list.innerHTML = data.slice(0, 30).map(function(item, idx) {
+          return '<li class="island-lb-item">'
+            + '<span class="island-lb-rank' + (idx < 3 ? ' top' : '') + '">' + (idx + 1) + '</span>'
+            + '<span class="island-lb-fp" title="' + esc(item.fp || '') + '">' + esc((item.fp || '').slice(0, 16) + '…') + '</span>'
+            + '<span class="island-lb-count">' + item.count + ' 题</span>'
+            + '</li>';
+        }).join('');
+      })
+      .catch(function() {});
   }
 
   window.addEventListener("resize", function() {
