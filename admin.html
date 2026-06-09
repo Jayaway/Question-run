@@ -309,8 +309,10 @@ body {
   </section>
 </div>
 
+<script src="./config.js?v=20260610a"></script>
 <script>
 (function() {
+  var API = function(p) { return (window.API_BASE || "") + p; };
   var statsData = null;
   var authToken = sessionStorage.getItem("admin_token") || "";
 
@@ -330,7 +332,7 @@ body {
   pwdInput.addEventListener("keydown", function(e) { if (e.key === "Enter") doLogin(); });
 
   function doLogin() {
-    fetch("/api/login", {
+    fetch(API("/api/login"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password: pwdInput.value })
@@ -378,7 +380,7 @@ body {
   function showDashboard() {
     loginOverlay.style.display = "none";
     dashboard.style.display = "block";
-    fetch("/api/stats", { headers: { Authorization: "Bearer " + authToken } })
+    fetch(API("/api/stats"), { headers: { Authorization: "Bearer " + authToken } })
       .then(function(r) { return r.json(); })
       .then(function(data) { statsData = data; fillDashboard(); })
       .catch(function() { failLogin(); });
@@ -490,7 +492,7 @@ body {
 
   function fetchLeaderboard() {
     if (!authToken) return;
-    fetch("/api/leaderboard", { headers: { Authorization: "Bearer " + authToken } })
+    fetch(API("/api/leaderboard"), { headers: { Authorization: "Bearer " + authToken } })
       .then(function(r) { return r.json(); })
       .then(function(data) {
         var list = document.getElementById("leaderboardList");

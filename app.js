@@ -1100,7 +1100,20 @@ function reportAnswer(qid) {
   try {
     var fp = localStorage.getItem("_visitor_fp");
     if (!fp) return;
-    navigator.sendBeacon("/api/track-answer", JSON.stringify({ fp: fp, qid: qid }));
+    var url = (window.API_BASE || "") + "/api/track-answer";
+    var payload = JSON.stringify({ fp: fp, qid: qid });
+    // 同源走 sendBeacon（页面卸载也能发），跨域走 fetch + keepalive
+    if (!window.API_BASE) {
+      navigator.sendBeacon(url, payload);
+    } else {
+      fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+        keepalive: true,
+        mode: "cors"
+      }).catch(function(){});
+    }
   } catch(e) {}
 }
 function chooseCheckpointMascot(isCorrect) {

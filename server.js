@@ -316,7 +316,7 @@ const server = http.createServer((req, res) => {
   try { pathname = decodeURIComponent(pathname); }
   catch { pathname = "/index.html"; }
   pathname = path.posix.normalize(pathname);
-  const publicFiles = new Set(["/index.html", "/admin.html", "/styles.css", "/app.js", "/data.js", "/banks.js"]);
+  const publicFiles = new Set(["/index.html", "/admin.html", "/styles.css", "/app.js", "/data.js", "/banks.js", "/config.js"]);
   if (!publicFiles.has(pathname) && !pathname.startsWith("/assets/")) {
     res.writeHead(404);
     res.end("Not Found");
