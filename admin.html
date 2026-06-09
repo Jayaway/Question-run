@@ -198,7 +198,7 @@ body {
 .island-lb-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 16px; background: #f0e8d8; font-weight: 600; color: #725d42; }
 .island-lb-rank { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #e6f9f6; color: #19c8b9; font-size: 13px; font-weight: 900; flex-shrink: 0; }
 .island-lb-rank.top { background: #f5c31c; color: #725d42; }
-.island-lb-fp { flex: 1; font-size: 13px; font-family: monospace; color: #9f927d; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.island-lb-name { flex: 1; font-size: 14px; color: #19c8b9; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .island-lb-count { font-size: 15px; font-weight: 800; color: #794f27; }
 .island-lb-note { text-align: center; padding: 20px; color: #9f927d; font-size: 13px; }
 
@@ -502,7 +502,7 @@ body {
         list.innerHTML = data.slice(0, 30).map(function(item, idx) {
           return '<li class="island-lb-item">'
             + '<span class="island-lb-rank' + (idx < 3 ? ' top' : '') + '">' + (idx + 1) + '</span>'
-            + '<span class="island-lb-fp" title="' + esc(item.fp || '') + '">' + esc((item.fp || '').slice(0, 16) + '…') + '</span>'
+            + '<span class="island-lb-name">同学 ' + (idx + 1) + '</span>'
             + '<span class="island-lb-count">' + item.count + ' 题</span>'
             + '</li>';
         }).join('');

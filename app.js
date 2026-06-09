@@ -242,7 +242,7 @@ function renderBankPicker() {
       const count = (b.questions || []).length;
       const progress = bankProgress(b);
       const del = g.builtin ? "" : `<span class="bank-del" data-del="${escapeAttr(b.id)}" role="button" title="删除题库">✕</span>`;
-      return `<button class="bank-item${active ? " active" : ""}" type="button" data-bank="${escapeAttr(b.id)}" style="--bank-energy:${progress.ratio}%"><span class="bank-energy" aria-hidden="true"></span><span class="bank-item-title">${escapeHtml(b.title)}</span><span class="bank-count" title="已刷 ${progress.done} / 100">${count}</span>${del}</button>`;
+      return `<button class="bank-item${active ? " active" : ""}" type="button" data-bank="${escapeAttr(b.id)}" style="--bank-energy:${progress.ratio}%"><span class="bank-energy" aria-hidden="true"></span><span class="bank-item-title">${escapeHtml(b.title)}</span><span class="bank-count" title="已刷 ${progress.done} / ${progress.total}">${count}</span>${del}</button>`;
     }).join("");
     return `<div class="bank-group${open ? " open" : ""}" data-subject="${escapeAttr(g.subject)}">
       <button class="bank-group-head" type="button"><span class="bank-group-name">${escapeHtml(g.subject)}</span><span class="bank-group-arrow">▾</span></button>
@@ -251,13 +251,13 @@ function renderBankPicker() {
   }).join("");
 }
 function bankProgress(b) {
-  const total = 100;
+  const total = (b.questions || []).length || 1;
   try {
     const state = b.id === currentBankId ? app : loadState(b.id);
     const done = Object.values(state.records || {}).filter(rec => rec && (rec.revealed || rec.mastered !== null || rec.correct !== null)).length;
-    return { done, ratio: Math.max(0, Math.min(100, Math.round(done / total * 100))) };
+    return { done, total, ratio: Math.max(0, Math.min(100, Math.round(done / total * 100))) };
   } catch {
-    return { done: 0, ratio: 0 };
+    return { done: 0, total, ratio: 0 };
   }
 }
 window.importQuestionBank = importQuestionBank;

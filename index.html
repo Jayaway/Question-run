@@ -270,9 +270,9 @@
     var cd = document.getElementById("countdownDigits");
     if (!cd) return;
     var now2 = new Date();
-    var target = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate() + 1, 14, 20, 0).getTime();
-    var now = Date.now();
-    var diff = target - now;
+    var y = now2.getFullYear();
+    var target = new Date(y, 5, 10, 14, 20, 0).getTime();
+    var diff = target - now2.getTime();
     if (diff <= 0) { cd.textContent = "考试中…"; cd.style.animation = "none"; cd.style.opacity = "1"; return; }
     var h = Math.floor(diff / 3600000);
     var m = Math.floor((diff % 3600000) / 60000);
