@@ -31,15 +31,15 @@
 ### 亮色模式
 
 <div align="center">
-  <img src="docs/screenshots/dark-quiz.png" width="45%" alt="暗色刷题界面"/>
-  <img src="docs/screenshots/dark-sidebar.png" width="45%" alt="暗色题库抽屉"/>
+  <img src="docs/screenshots/dark-quiz.webp" width="45%" alt="暗色刷题界面"/>
+  <img src="docs/screenshots/dark-sidebar.webp" width="45%" alt="暗色题库抽屉"/>
 </div>
 
 ### 暗色模式
 
 <div align="center">
-  <img src="docs/screenshots/light-quiz.png" width="45%" alt="亮色刷题界面"/>
-  <img src="docs/screenshots/light-sidebar.png" width="45%" alt="亮色题库抽屉"/>
+  <img src="docs/screenshots/light-quiz.webp" width="45%" alt="亮色刷题界面"/>
+  <img src="docs/screenshots/light-sidebar.webp" width="45%" alt="亮色题库抽屉"/>
 </div>
 
 ---

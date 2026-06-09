@@ -27,7 +27,7 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
 function getAudioCtx() { if (!audioCtx) audioCtx = new AudioCtx(); return audioCtx; }
 
-function playCorrectSound() {
+function playCorrectSound() { vibrate(15);
   try {
     const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
@@ -44,7 +44,8 @@ function playCorrectSound() {
   } catch(e) {}
 }
 
-function playWrongSound() {
+function vibrate(p) { try { navigator.vibrate(p); } catch(e) {} }
+function playWrongSound() { vibrate(40);
   try {
     const ctx = getAudioCtx();
     const osc = ctx.createOscillator();
@@ -179,7 +180,7 @@ function normalizeQuestion(q, index) {
 function selectBank(id) {
   if (!id || !bankById(id)) return;
   if (id === currentBankId) { closeDrawerOnMobile(); return; }
-  saveState();
+  saveState(true);
   currentBankId = id;
   localStorage.setItem(CURRENT_BANK_KEY, id);
   bank = normalizeBankObj(bankById(id));
@@ -264,6 +265,53 @@ window.importQuestionBank = importQuestionBank;
 let swipeStart = null;
 let autoNextTimer = 0;
 let _feedbackDelayTimer = 0;
+let _saveStateTimer = 0;
+const SAVE_STATE_DEBOUNCE = 300;
+
+const TimerManager = {
+  timers: new Map(),
+  set(name, fn, delay) {
+    const existing = this.timers.get(name);
+    if (existing) clearTimeout(existing);
+    const id = setTimeout(fn, delay);
+    this.timers.set(name, id);
+    return id;
+  },
+  clear(name) {
+    const id = this.timers.get(name);
+    if (id) { clearTimeout(id); this.timers.delete(name); }
+  },
+  clearAll() {
+    this.timers.forEach(id => clearTimeout(id));
+    this.timers.clear();
+  }
+};
+
+const EventManager = {
+  listeners: new Map(),
+  on(el, event, handler, options) {
+    el.addEventListener(event, handler, options);
+    const key = `${event}:${handler.toString().slice(0,50)}`;
+    if (!this.listeners.has(el)) this.listeners.set(el, []);
+    this.listeners.get(el).push({ event, handler, options });
+  },
+  off(el, event, handler) {
+    el.removeEventListener(event, handler);
+  },
+  offAll(el) {
+    const list = this.listeners.get(el);
+    if (list) {
+      list.forEach(({ event, handler, options }) => el.removeEventListener(event, handler, options));
+      this.listeners.delete(el);
+    }
+  },
+  clearAll() {
+    this.listeners.forEach((list, el) => {
+      list.forEach(({ event, handler, options }) => el.removeEventListener(event, handler, options));
+    });
+    this.listeners.clear();
+  }
+};
 
 function stateKey(id) { return STATE_PREFIX + id; }
 function loadState(id) {
@@ -273,7 +321,23 @@ function loadState(id) {
   if (!raw && id === "algo") { const legacy = localStorage.getItem(LEGACY_STATE_KEY); if (legacy) raw = legacy; }
   try { return { ...f, ...JSON.parse(raw || "{}") }; } catch { return f; }
 }
-function saveState() { if (currentBankId) localStorage.setItem(stateKey(currentBankId), JSON.stringify(app)); }
+function saveState(immediate = false) {
+  if (!currentBankId) return;
+  const key = stateKey(currentBankId);
+  const data = JSON.stringify(app);
+  if (immediate) {
+    localStorage.setItem(key, data);
+    return;
+  }
+  TimerManager.set("_saveStateTimer", () => localStorage.setItem(key, data), SAVE_STATE_DEBOUNCE);
+}
+function flushSaveState() {
+  if (_saveStateTimer) {
+    clearTimeout(_saveStateTimer);
+    _saveStateTimer = 0;
+    if (currentBankId) localStorage.setItem(stateKey(currentBankId), JSON.stringify(app));
+  }
+}
 function recordFor(id) { if (!app.records[id]) app.records[id] = { revealed: false, correct: null }; return app.records[id]; }
 
 function filteredQuestions() {
@@ -422,38 +486,38 @@ function renderQuestion(q, list) {
   }
 
   if (reveal) {
-    clearTimeout(_feedbackDelayTimer);
-    _feedbackDelayTimer = setTimeout(() => showFeedback(q, rec.correct !== false), 650);
+    TimerManager.clear("_feedbackDelayTimer");
+    TimerManager.set("_feedbackDelayTimer", () => showFeedback(q, rec.correct !== false), 650);
   } else if (rec.correct === false) {
     // 选错后 4 秒才揭示正确选项 + 弹出解析（首次设定，重试不刷新计时器）
-    if (!_feedbackDelayTimer) {
-      _feedbackDelayTimer = setTimeout(() => {
-      _feedbackDelayTimer = 0;
-      rec.revealed = true;
-      // 手动更新选项样式，不触发 render 避免递归计时器
-      els.choiceArea?.querySelectorAll(".option-btn").forEach(btn => {
-        const key = btn.dataset.key;
-        const isCorrect = normalizeAnswer(key) === normalizeAnswer(q.answer);
-        const selected = key === rec.selected;
-        if (isCorrect) {
-          btn.classList.add("correct");
-          const mark = btn.querySelector(".option-mark");
-          if (mark) mark.innerHTML = `<img src="./assets/check-mark.webp" class="option-mark-img" alt="">`;
-        } else if (selected) {
-          btn.classList.add("wrong");
-          const mark = btn.querySelector(".option-mark");
-          if (mark) mark.innerHTML = `<img src="./assets/x-mark.webp" class="option-mark-img" alt="">`;
-        }
-        btn.disabled = true;
-      });
-      els.primaryBtn.textContent = "下一题";
-      els.primaryBtn.dataset.state = "next";
-      showFeedback(q, false);
-    }, 4000);
+    if (!TimerManager.timers.has("_feedbackDelayTimer")) {
+      TimerManager.set("_feedbackDelayTimer", () => {
+        TimerManager.clear("_feedbackDelayTimer");
+        rec.revealed = true;
+        // 手动更新选项样式，不触发 render 避免递归计时器
+        els.choiceArea?.querySelectorAll(".option-btn").forEach(btn => {
+          const key = btn.dataset.key;
+          const isCorrect = normalizeAnswer(key) === normalizeAnswer(q.answer);
+          const selected = key === rec.selected;
+          if (isCorrect) {
+            btn.classList.add("correct");
+            const mark = btn.querySelector(".option-mark");
+            if (mark) mark.innerHTML = `<img src="./assets/check-mark.webp" class="option-mark-img" alt="">`;
+          } else if (selected) {
+            btn.classList.add("wrong");
+            const mark = btn.querySelector(".option-mark");
+            if (mark) mark.innerHTML = `<img src="./assets/x-mark.webp" class="option-mark-img" alt="">`;
+          }
+          btn.disabled = true;
+        });
+        els.primaryBtn.textContent = "下一题";
+        els.primaryBtn.dataset.state = "next";
+        showFeedback(q, false);
+      }, 4000);
     }
   } else {
     hideFeedback();
-    clearTimeout(_feedbackDelayTimer);
+    TimerManager.clear("_feedbackDelayTimer");
   }
 
 }
@@ -498,8 +562,8 @@ function shortLabel(q) { const p = {"选择题":"选","填空题":"填","算法�
 function escapeHtml(t) { return String(t||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;"); }
 function escapeAttr(t) { return escapeHtml(t); }
 
-function clearAutoNext() { if (autoNextTimer) { clearTimeout(autoNextTimer); autoNextTimer = 0; } }
-function goToIndex(nextIndex) { clearTimeout(_feedbackDelayTimer); clearAutoNext(); app.index = Math.max(0, Math.min(nextIndex, filteredQuestions().length - 1)); render(); }
+function clearAutoNext() { TimerManager.clear("autoNextTimer"); }
+function goToIndex(nextIndex) { TimerManager.clear("_feedbackDelayTimer"); clearAutoNext(); app.index = Math.max(0, Math.min(nextIndex, filteredQuestions().length - 1)); render(); }
 function doGo(step) { const list = filteredQuestions(); if (!list.length) return; goToIndex(app.index + step); }
 function nextQuestion() { doGo(1); }
 function prevQuestion() { doGo(-1); }
@@ -509,8 +573,8 @@ function selectChoice(key) {
   const q = list[app.index];
   if (!q) return;
   const rec = recordFor(q.id);
-  // 已揭示的题目不允许再选；选错后（未揭示）允许再次选择
   if (rec.revealed) return;
+  vibrate(10);
   clearAutoNext();
   rec.selected = key;
   checkCurrentAnswer();
@@ -557,7 +621,7 @@ function checkCurrentAnswer() {
       }, correct ? 700 : 500);
     } else if (correct && isFirstAttempt) {
       // 答对自动跳下一题（仅首次答对，补选不算）
-      autoNextTimer = setTimeout(() => nextQuestion(), 1300);
+      TimerManager.set("autoNextTimer", () => nextQuestion(), 1300);
     }
     return;
   }
@@ -581,7 +645,7 @@ function checkCurrentAnswer() {
       playMascotMoment(role, rec.correct ? () => doGo(1) : null);
     }, rec.correct ? 700 : 500);
   } else if (rec.correct) {
-    autoNextTimer = setTimeout(() => doGo(1), 1300);
+    TimerManager.set("autoNextTimer", () => doGo(1), 1300);
   }
 }
 
@@ -625,7 +689,7 @@ function shuffleQuestions() {
   render();
 }
 
-function resetRecords() { app.records = {}; app.marked = {}; app.streak = 0; app.index = 0; answeredCount = 0; last15Results = []; render(); }
+function resetRecords() { app.records = {}; app.marked = {}; app.streak = 0; app.index = 0; answeredCount = 0; last15Results = []; saveState(true); render(); }
 
 function showModal({ type = "default", icon = "", title = "提示", body = "", confirmText = "确定", cancelText = "取消", onConfirm = null }) {
   const overlay = document.createElement("div");
@@ -756,7 +820,10 @@ function bindEvents() {
       }
       app.index = 0;
       initFilters();
-      render();
+render();
+
+window.addEventListener("beforeunload", flushSaveState, { once: true });
+window.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") flushSaveState(); });
       closeDrawerOnMobile();
     });
   });
@@ -827,7 +894,6 @@ function bindEvents() {
 }
 
 let answeredCount = 0;
-let pendingMascot = null;
 let last15Results = [];
 // GPT生成吉祥物台词
 async function generateMascotLines(role, accuracy, isDark) {
@@ -1086,10 +1152,10 @@ async function playMascotMoment(role, onComplete) {
 
   bubble.textContent = lines[pickLineIndex()];
   createMascotParticles(role);
-  clearTimeout(pendingMascot);
-  pendingMascot = setTimeout(() => {
+  TimerManager.clear("pendingMascot");
+  TimerManager.set("pendingMascot", () => {
     overlay.classList.add("hide");
-    setTimeout(() => {
+    TimerManager.set("pendingMascotHide", () => {
       overlay.className = "mascot-overlay";
       overlay.classList.remove("hide");
       if (typeof onComplete === "function") onComplete();
@@ -1112,6 +1178,7 @@ if (!PERFORMANCE_MODE) {
   new Image().src = "./assets/correct-glow.webp";
   new Image().src = "./assets/correct-celebrate.webp";
   new Image().src = "./assets/wrong-speechless.webp";
+  new Image().src = "./assets/moon.webp";
 }
 
 render();

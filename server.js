@@ -10,21 +10,82 @@ const ANSWER_FILE = path.join(__dirname, "answer-data.json");
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "6666";
 const adminTokens = new Set();
 
+const FLUSH_INTERVAL = 5000;
+const MAX_VISITS = 50000;
+const MAX_ANSWERS = 200000;
+
+let visitsCache = null;
+let answersCache = null;
+let flushTimer = null;
+let dirtyVisits = false;
+let dirtyAnswers = false;
+
 function loadData() {
-  try { return JSON.parse(fs.readFileSync(DATA_FILE, "utf8")); }
-  catch { return { visits: [] }; }
+  if (visitsCache) return visitsCache;
+  try { visitsCache = JSON.parse(fs.readFileSync(DATA_FILE, "utf8")); }
+  catch { visitsCache = { visits: [] }; }
+  return visitsCache;
 }
-function saveData(data) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), "utf8");
+function loadAnswers() {
+  if (answersCache) return answersCache;
+  try { answersCache = JSON.parse(fs.readFileSync(ANSWER_FILE, "utf8")); }
+  catch { answersCache = { answers: [] }; }
+  return answersCache;
 }
 
-function loadAnswers() {
-  try { return JSON.parse(fs.readFileSync(ANSWER_FILE, "utf8")); }
-  catch { return { answers: [] }; }
+function scheduleFlush() {
+  if (flushTimer) return;
+  flushTimer = setInterval(flushToDisk, FLUSH_INTERVAL);
+  flushTimer.unref();
 }
-function saveAnswers(data) {
-  fs.writeFileSync(ANSWER_FILE, JSON.stringify(data, null, 2), "utf8");
+
+function flushToDisk() {
+  if (dirtyVisits && visitsCache) {
+    dirtyVisits = false;
+    fs.writeFile(DATA_FILE, JSON.stringify(visitsCache, null, 2), "utf8", (err) => {
+      if (err) { dirtyVisits = true; console.error("flush visits error:", err); }
+    });
+  }
+  if (dirtyAnswers && answersCache) {
+    dirtyAnswers = false;
+    fs.writeFile(ANSWER_FILE, JSON.stringify(answersCache, null, 2), "utf8", (err) => {
+      if (err) { dirtyAnswers = true; console.error("flush answers error:", err); }
+    });
+  }
+  if (!dirtyVisits && !dirtyAnswers && flushTimer) {
+    clearInterval(flushTimer);
+    flushTimer = null;
+  }
 }
+
+function markVisitsDirty() {
+  dirtyVisits = true;
+  scheduleFlush();
+}
+function markAnswersDirty() {
+  dirtyAnswers = true;
+  scheduleFlush();
+}
+
+function addVisit(visit) {
+  const data = loadData();
+  data.visits.push(visit);
+  if (data.visits.length > MAX_VISITS) data.visits = data.visits.slice(-MAX_VISITS);
+  markVisitsDirty();
+}
+
+function addAnswer(answer) {
+  const data = loadAnswers();
+  data.answers.push(answer);
+  if (data.answers.length > MAX_ANSWERS) data.answers = data.answers.slice(-MAX_ANSWERS);
+  markAnswersDirty();
+}
+
+function getVisits() { return loadData().visits; }
+function getAnswers() { return loadAnswers().answers; }
+
+process.on("SIGINT", () => { flushToDisk(); setTimeout(() => process.exit(0), 100); });
+process.on("SIGTERM", () => { flushToDisk(); setTimeout(() => process.exit(0), 100); });
 
 function getLeaderboard(answers) {
   const userMap = {};
@@ -52,6 +113,24 @@ const MIME = {
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon"
 };
+
+const CACHE_MAX_AGE = {
+  ".html": "no-cache",
+  ".css":  "max-age=86400, stale-while-revalidate=3600",
+  ".js":   "max-age=86400, stale-while-revalidate=3600",
+  ".json": "no-cache",
+  ".png":  "max-age=31536000, immutable",
+  ".jpg":  "max-age=31536000, immutable",
+  ".jpeg": "max-age=31536000, immutable",
+  ".webp": "max-age=31536000, immutable",
+  ".svg":  "max-age=31536000, immutable",
+  ".ico":  "max-age=31536000, immutable",
+};
+
+function getCacheHeader(ext) {
+  return CACHE_MAX_AGE[ext] || "no-cache";
+}
+
 
 function getClientIP(req) {
   const fwd = req.headers["x-forwarded-for"];
@@ -176,8 +255,7 @@ const server = http.createServer((req, res) => {
         const { fp, page, referrer } = JSON.parse(body || "{}");
         const ip = getClientIP(req);
         const ts = Date.now();
-        const data = loadData();
-        data.visits.push({
+        addVisit({
           ts: ts,
           ip: ip,
           ua: req.headers["user-agent"] || "",
@@ -188,8 +266,6 @@ const server = http.createServer((req, res) => {
           location: getLocationLabel(ip),
           tags: getTag(ts)
         });
-        if (data.visits.length > 50000) data.visits = data.visits.slice(-50000);
-        saveData(data);
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) {
@@ -207,10 +283,7 @@ const server = http.createServer((req, res) => {
       try {
         const { fp, qid } = JSON.parse(body || "{}");
         if (!fp || !qid) { res.writeHead(400); res.end(JSON.stringify({ error: "missing fp or qid" })); return; }
-        const data = loadAnswers();
-        data.answers.push({ fp: fp, qid: qid, ts: Date.now() });
-        if (data.answers.length > 200000) data.answers = data.answers.slice(-200000);
-        saveAnswers(data);
+        addAnswer({ fp: fp, qid: qid, ts: Date.now() });
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) {
@@ -228,22 +301,14 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify({ error: "Unauthorized" }));
       return;
     }
-    const data = loadData();
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(getStats(data.visits)));
+    res.end(JSON.stringify(getStats(getVisits())));
     return;
   }
 
   if (req.method === "GET" && req.url === "/api/leaderboard") {
-    const token = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
-    if (!adminTokens.has(token)) {
-      res.writeHead(401, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ error: "Unauthorized" }));
-      return;
-    }
-    const data = loadAnswers();
     res.writeHead(200, { "Content-Type": "application/json" });
-    res.end(JSON.stringify(getLeaderboard(data.answers)));
+    res.end(JSON.stringify(getLeaderboard(getAnswers())));
     return;
   }
 
@@ -267,7 +332,10 @@ const server = http.createServer((req, res) => {
   if (MIME[ext]) {
     fs.readFile(filePath, (err, data) => {
       if (err) { res.writeHead(404); res.end("Not Found"); return; }
-      res.writeHead(200, { "Content-Type": MIME[ext] });
+      res.writeHead(200, {
+        "Content-Type": MIME[ext],
+        "Cache-Control": getCacheHeader(ext)
+      });
       res.end(data);
     });
   } else {

@@ -12,6 +12,9 @@
   <link rel="icon" type="image/webp" sizes="128x128" href="./assets/favicon-128x128.webp">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
   <title>刷题</title>
+  <link rel="preload" as="image" href="./assets/sun2.webp">
+  <link rel="preload" as="image" href="./assets/star.webp">
+  <link rel="preload" as="image" href="./assets/fire-icon.webp">
   <link rel="stylesheet" href="./styles.css?v=20260609a">
 </head>
 <body>
@@ -172,7 +175,7 @@
           <h3 id="questionTitle" class="question-title"></h3>
           <div class="question-body">
             <pre id="questionPrompt" class="prompt"></pre>
-            <img id="questionImage" class="question-image" alt="题目配图">
+            <img id="questionImage" class="question-image" alt="题目配图" loading="lazy" width="800" height="600">
 
             <div id="choiceArea" class="choice-area"></div>
 
@@ -212,6 +215,7 @@
           </div>
         </footer>
       </section>
+
     </main>
   </div>
 
@@ -240,10 +244,9 @@
   } catch(e) {}
 })();
 </script>
-
 <script>
 (function() {
-  var NOTICE_VERSION = "v20250609c";
+  var NOTICE_VERSION = "v20250609d";
   if (localStorage.getItem("_update_notice_seen") !== NOTICE_VERSION) {
     var overlay = document.getElementById("updateNotice");
     if (overlay) {
@@ -278,6 +281,7 @@
   }
   updateCountdown();
   setInterval(updateCountdown, 1000);
+
 })();
 </script>
 
