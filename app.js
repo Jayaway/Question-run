@@ -532,7 +532,7 @@ function checkFillAnswer(input, answer) {
 }
 function showFeedback(q, correct) {
   // 移除可能还在播放的隐藏动画
-  els.feedbackPanel.classList.remove("pop-burst");
+  els.feedbackPanel.classList.remove("pop-burst"); const isAnalysis = q.type === "analysis" || (q.analysis && q.analysis.length > 80); els.feedbackPanel.classList.toggle("is-analysis", isAnalysis);
   els.feedbackPanel.dataset.state = correct ? "ok" : "bad";
   if (correct) {
     const imgs = ["./assets/correct-sunglasses.webp", "./assets/correct-glow.webp", "./assets/correct-celebrate.webp"];
