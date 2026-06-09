@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
   <meta name="color-scheme" content="light dark">
   <meta name="supported-color-schemes" content="light dark">
   <meta name="theme-color" content="#f8fbf5" id="themeColorMeta">
@@ -17,12 +17,14 @@
 <body>
 <div id="updateNotice" class="update-notice-overlay">
   <div class="update-notice-card">
-    <div class="update-notice-emoji">🎉</div>
+    <div class="update-notice-emoji">🎮</div>
     <h2 class="update-notice-title">功能更新</h2>
     <ul class="update-notice-list">
-      <li>⌨️ 快捷键 <strong>ABCD</strong> 改为 <strong>QWER</strong></li>
-      <li>⏳ 新增 <strong>考试倒计时</strong>（6月10日 14:20）</li>
-      <li>📋 新增 <strong>设备管理（老师版）</strong>题库</li>
+      <li><strong>QWER / 1234</strong> — 选择题选项</li>
+      <li><strong>← →</strong> — 上一题 / 下一题</li>
+      <li><strong>Enter / 空格</strong> — 确认提交</li>
+      <li><strong>M</strong> — 收藏题目</li>
+      <li>⏳ 新增 <strong>考试倒计时</strong>（点击可隐藏）</li>
     </ul>
     <button id="dismissUpdate" class="update-notice-btn">知道了</button>
   </div>
@@ -239,7 +241,7 @@
 
 <script>
 (function() {
-  var NOTICE_VERSION = "v20250609";
+  var NOTICE_VERSION = "v20250609b";
   if (localStorage.getItem("_update_notice_seen") !== NOTICE_VERSION) {
     var overlay = document.getElementById("updateNotice");
     if (overlay) {
@@ -249,6 +251,14 @@
       overlay.classList.remove("show");
       localStorage.setItem("_update_notice_seen", NOTICE_VERSION);
     });
+  }
+
+  var ec = document.getElementById("examCountdown");
+  if (ec) {
+    ec.addEventListener("click", function() {
+      ec.style.display = "none";
+    });
+    ec.style.cursor = "pointer";
   }
 
   function updateCountdown() {
