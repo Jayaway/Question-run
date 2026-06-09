@@ -1763,3 +1763,109 @@ body.dark .import-btn.primary:hover { background: #1D4426; }
 body.dark .drawer-overlay { background: rgba(0, 0, 0, .42); }
 body.dark .dropdown-item { color: var(--sidebar-text); }
 body.dark .dropdown-toggle::after { color: var(--sidebar-green); }
+
+
+/* ===== 更新提示弹窗 ===== */
+.update-notice-overlay {
+  position: fixed; inset: 0; z-index: 10000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.45);
+  opacity: 0; pointer-events: none;
+  transition: opacity .28s ease;
+}
+.update-notice-overlay.show {
+  opacity: 1; pointer-events: auto;
+}
+.update-notice-card {
+  background: #fff;
+  border-radius: 24px;
+  padding: 32px 28px 24px;
+  max-width: 380px; width: calc(100vw - 40px);
+  text-align: center;
+  box-shadow: 0 20px 48px rgba(0,0,0,.18);
+  transform: translateY(16px) scale(.96);
+  transition: transform .28s cubic-bezier(.34,1.56,.64,1);
+}
+.update-notice-overlay.show .update-notice-card {
+  transform: translateY(0) scale(1);
+}
+.update-notice-emoji {
+  font-size: 48px; margin-bottom: 8px;
+}
+.update-notice-title {
+  font-size: 22px; font-weight: 900; color: #725d42;
+  margin: 0 0 16px;
+}
+.update-notice-list {
+  text-align: left; margin: 0 0 24px; padding: 0 8px;
+  list-style: none; display: grid; gap: 10px;
+}
+.update-notice-list li {
+  font-size: 14px; font-weight: 700; color: #5c4d3c;
+  padding: 10px 14px; border-radius: 14px;
+  background: #f8f4e8;
+}
+.update-notice-list li strong {
+  color: #19c8b9; font-weight: 900;
+}
+.update-notice-btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  height: 46px; padding: 0 40px;
+  border: none; border-radius: 50px;
+  background: linear-gradient(135deg, #19c8b9, #14b0a4);
+  color: #fff; font-size: 16px; font-weight: 900;
+  box-shadow: 0 4px 0 #0e9185;
+  cursor: pointer; transition: transform .08s, box-shadow .08s;
+}
+.update-notice-btn:hover { transform: translateY(-1px); }
+.update-notice-btn:active { transform: translateY(2px); box-shadow: 0 1px 0 #0e9185; }
+
+/* ===== 考试倒计时 ===== */
+.exam-countdown {
+  display: inline-flex; align-items: center; gap: 4px;
+  height: 36px; padding: 0 10px;
+  border: 2px dashed #ff4b4b; border-radius: 12px;
+  background: #fff5f5;
+  margin-right: 8px;
+}
+.countdown-icon { font-size: 14px; }
+.countdown-digits {
+  font-size: 15px; font-weight: 900; color: #ff4b4b;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+  animation: countdown-flash .8s ease-in-out infinite;
+}
+@keyframes countdown-flash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .35; }
+}
+
+/* dark mode */
+body.dark .update-notice-card {
+  background: #1A2024; color: #F2F5F1;
+}
+body.dark .update-notice-title {
+  color: #F2F5F1;
+}
+body.dark .update-notice-list li {
+  background: #20272B; color: #AEB8AF;
+}
+body.dark .update-notice-list li strong {
+  color: #19c8b9;
+}
+body.dark .exam-countdown {
+  background: #2A1518; border-color: #FF5A5F;
+}
+body.dark .countdown-digits {
+  color: #FF5A5F;
+}
+
+/* mobile responsive */
+@media (max-width: 700px) {
+  .exam-countdown {
+    height: 30px; padding: 0 8px;
+    border-radius: 10px; margin-right: 4px;
+  }
+  .countdown-digits { font-size: 13px; }
+  .countdown-icon { font-size: 12px; }
+}

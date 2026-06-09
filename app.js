@@ -797,8 +797,8 @@ function bindEvents() {
     if (!q) return;
 
     if (q.type === "choice") {
-      const idxMap = { "1": 0, "2": 1, "3": 2, "4": 3, "a": 0, "b": 1, "c": 2, "d": 3,
-                        "A": 0, "B": 1, "C": 2, "D": 3 };
+      const idxMap = { "1": 0, "2": 1, "3": 2, "4": 3, "q": 0, "w": 1, "e": 2, "r": 3,
+                        "Q": 0, "W": 1, "E": 2, "R": 3 };
       if (e.key in idxMap) {
         const opt = q.options[idxMap[e.key]];
         if (opt) { e.preventDefault(); selectChoice(opt.key); return; }

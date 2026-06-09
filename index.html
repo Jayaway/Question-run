@@ -12,9 +12,21 @@
   <link rel="icon" type="image/webp" sizes="128x128" href="./assets/favicon-128x128.webp">
   <link rel="apple-touch-icon" sizes="180x180" href="./assets/apple-touch-icon.png">
   <title>刷题</title>
-  <link rel="stylesheet" href="./styles.css?v=20260607a">
+  <link rel="stylesheet" href="./styles.css?v=20260609a">
 </head>
 <body>
+<div id="updateNotice" class="update-notice-overlay">
+  <div class="update-notice-card">
+    <div class="update-notice-emoji">🎉</div>
+    <h2 class="update-notice-title">功能更新</h2>
+    <ul class="update-notice-list">
+      <li>⌨️ 快捷键 <strong>ABCD</strong> 改为 <strong>QWER</strong></li>
+      <li>⏳ 新增 <strong>考试倒计时</strong>（6月10日 14:20）</li>
+      <li>📋 新增 <strong>设备管理（老师版）</strong>题库</li>
+    </ul>
+    <button id="dismissUpdate" class="update-notice-btn">知道了</button>
+  </div>
+</div>
   <button id="mobileMenuBtn" class="mobile-menu-btn" type="button" aria-label="打开菜单" aria-controls="mobileDrawer" aria-expanded="false">
     <span></span>
     <span></span>
@@ -143,6 +155,10 @@
               <span id="typeBadge" class="badge">选择题</span>
               <span id="progressText" class="progress-text">1 / 1</span>
             </div>
+            <span id="examCountdown" class="exam-countdown" title="距离考试 6月10日 14:20">
+              <span class="countdown-icon">⏳</span>
+              <span class="countdown-digits" id="countdownDigits">--:--:--</span>
+            </span>
             <button id="markBtn" class="mark-btn" type="button" aria-pressed="false" title="收藏此题">
               <span id="markIcon">☆</span>
               <span class="mark-text">收藏</span>
@@ -204,8 +220,8 @@
   </div>
 
   <script src="./data.js?v=20260529a"></script>
-  <script src="./banks.js?v=20260607a"></script>
-  <script src="./app.js?v=20260607a"></script>
+  <script src="./banks.js?v=20260609b"></script>
+  <script src="./app.js?v=20260609a"></script>
   <script>
 (function() {
   try {
@@ -220,5 +236,38 @@
   } catch(e) {}
 })();
 </script>
+
+<script>
+(function() {
+  var NOTICE_VERSION = "v20250609";
+  if (localStorage.getItem("_update_notice_seen") !== NOTICE_VERSION) {
+    var overlay = document.getElementById("updateNotice");
+    if (overlay) {
+      setTimeout(function() { overlay.classList.add("show"); }, 400);
+    }
+    document.getElementById("dismissUpdate").addEventListener("click", function() {
+      overlay.classList.remove("show");
+      localStorage.setItem("_update_notice_seen", NOTICE_VERSION);
+    });
+  }
+
+  function updateCountdown() {
+    var cd = document.getElementById("countdownDigits");
+    if (!cd) return;
+    var now2 = new Date();
+    var target = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate() + 1, 14, 20, 0).getTime();
+    var now = Date.now();
+    var diff = target - now;
+    if (diff <= 0) { cd.textContent = "考试中…"; cd.style.animation = "none"; cd.style.opacity = "1"; return; }
+    var h = Math.floor(diff / 3600000);
+    var m = Math.floor((diff % 3600000) / 60000);
+    var s = Math.floor((diff % 60000) / 1000);
+    cd.textContent = String(h).padStart(2, "0") + ":" + String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+  updateCountdown();
+  setInterval(updateCountdown, 1000);
+})();
+</script>
+
 </body>
 </html>
