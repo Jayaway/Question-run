@@ -530,6 +530,25 @@ function checkFillAnswer(input, answer) {
   if (!answerParts.length) return normalizeAnswer(input) === normalizeAnswer(answer);
   return userParts.length === answerParts.length && userParts.every((part, index) => part === answerParts[index]);
 }
+function escHTML(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function formatAnalysis(text) {
+  if (!text) return [];
+  const t = String(text).trim();
+  if (!t) return [];
+  let m = t.match(/(?:^|[\s\u3002\uff1b\uff01\uff1f])\d+[.\u3001\)]\s*/);
+  if (m) { const parts = t.split(/(?:^|[\s\u3002\uff1b\uff01\uff1f])\d+[.\u3001\)]\s*/).filter(p => p.trim()); if (parts.length >= 2) return parts.map(p => p.trim()); }
+  m = t.match(/[\uff08(]\s*\d+\s*[\uff09)\]]/);
+  if (m) { const parts = t.split(/[\uff08(]\s*\d+\s*[\uff09)\]]\s*/).filter(p => p.trim()); if (parts.length >= 2) return parts.map(p => p.trim()); }
+  m = t.match(/[\u2460-\u2473]/);
+  if (m) { const parts = t.split(/[\u2460-\u2473]\s*/).filter(p => p.trim()); if (parts.length >= 2) return parts.map(p => p.trim()); }
+  m = t.match(/\u7b2c[\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\d]+[,\uff0c\u3001]/);
+  if (m) { const parts = t.split(/\u7b2c[\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\d]+[,\uff0c\u3001]\s*/).filter(p => p.trim()); if (parts.length >= 2) return parts.map(p => p.trim()); }
+  const sc = (t.match(/[\uff1b;]/g) || []).length;
+  if (sc >= 2) { const parts = t.split(/[\uff1b;]\s*/).filter(p => p.trim()); if (parts.length >= 2) return parts.map(p => p.trim()); }
+  if (/\n/.test(t)) { const parts = t.split(/\n+/).map(p => p.trim()).filter(p => p); if (parts.length >= 2) return parts; }
+  return [t];
+}
+
 function showFeedback(q, correct) {
   // 移除可能还在播放的隐藏动画
   els.feedbackPanel.classList.remove("pop-burst"); const isAnalysis = q.type === "analysis" || (q.analysis && q.analysis.length > 80); els.feedbackPanel.classList.toggle("is-analysis", isAnalysis);
@@ -543,7 +562,8 @@ function showFeedback(q, correct) {
   els.feedbackTitle.textContent = correct ? "回答正确" : "回答错误";
   els.feedbackAnswer.textContent = q.answer || "无";
   const hasAnalysis = Boolean(String(q.analysis || "").trim());
-  els.feedbackAnalysis.textContent = q.analysis || "";
+  const kps = formatAnalysis(q.analysis || "");
+  els.feedbackAnalysis.innerHTML = kps.map(p => '<div class="kp-item">' + escHTML(p) + '</div>').join("");
   els.feedbackAnalysisBlock.style.display = hasAnalysis ? "grid" : "none";
 }
 function hideFeedback() {
