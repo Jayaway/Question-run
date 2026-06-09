@@ -189,6 +189,9 @@ body {
 .island-recent-page { font-size: 14px; }
 .island-recent-sep { color: #c4b89e; }
 .island-recent-meta { color: #9f927d; font-size: 13px; }
+.island-tag { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 50px; font-size: 11px; font-weight: 800; margin-left: 4px; }
+.island-tag-student { background: #e6f9f6; color: #19c8b9; }
+.island-tag-king { background: #fff3cd; color: #c79100; }
 
 .island-leaderboard-card { margin-top: 20px; }
 .island-lb-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; }
@@ -395,6 +398,8 @@ body {
         + '<span class="island-recent-page">' + esc(item.page || "") + '</span>'
         + '<span class="island-recent-sep">·</span>'
         + '<span class="island-recent-meta">' + esc(item.device || "") + ' / ' + esc(item.location || "") + '</span>'
+        + (item.tags === '卷王' ? '<span class="island-tag island-tag-king">🔥卷王</span>' : '')
+        + (item.tags === '杉达学生' ? '<span class="island-tag island-tag-student">🎓杉达学生</span>' : '')
         + '</li>';
     }).join("") || '<li style="padding:20px;color:#9f927d;text-align:center">暂无数据</li>';
 

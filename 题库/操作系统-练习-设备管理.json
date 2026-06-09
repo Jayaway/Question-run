@@ -1,0 +1,563 @@
+{
+  "meta": {
+    "title": "设备管理 章节练习",
+    "source": "设备管理 章节练习",
+    "count": 22
+  },
+  "questions": [
+    {
+      "id": "OS-PRAC-DEV-001",
+      "section": "选择题",
+      "number": 1,
+      "type": "choice",
+      "prompt": "操作系统中采用多道程序设计技术提高CPU和外部设备的（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "利用率"
+        },
+        {
+          "key": "B",
+          "text": "可靠性"
+        },
+        {
+          "key": "C",
+          "text": "稳定性"
+        },
+        {
+          "key": "D",
+          "text": "兼容性"
+        }
+      ],
+      "answer": "A",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-002",
+      "section": "选择题",
+      "number": 2,
+      "type": "choice",
+      "prompt": "通过硬件和软件的功能扩充，把原来独立的设备改造成能为若干用户共享的设备， 这种设备称为（ ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "存储设备"
+        },
+        {
+          "key": "B",
+          "text": "系统设备"
+        },
+        {
+          "key": "C",
+          "text": "用户设备"
+        },
+        {
+          "key": "D",
+          "text": "虚拟设备"
+        }
+      ],
+      "answer": "D",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-003",
+      "section": "选择题",
+      "number": 3,
+      "type": "choice",
+      "prompt": "（   ）是CPU与I/O设备之间的接口，它接收从CPU发来的命令，并去控制I/O设备工作，使处理器从繁杂的设备控制事务中解脱出来。",
+      "options": [
+        {
+          "key": "A",
+          "text": "中断装置"
+        },
+        {
+          "key": "B",
+          "text": "通道"
+        },
+        {
+          "key": "C",
+          "text": "逻辑"
+        },
+        {
+          "key": "D",
+          "text": "设备控制器"
+        }
+      ],
+      "answer": "D",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-004",
+      "section": "选择题",
+      "number": 4,
+      "type": "choice",
+      "prompt": "(磁盘设备) 设磁盘的转速为3000 r/min，盘面划分成10个扇区，则读取一个扇区的时间是(     )",
+      "options": [
+        {
+          "key": "A",
+          "text": "20ms"
+        },
+        {
+          "key": "B",
+          "text": "5ms"
+        },
+        {
+          "key": "C",
+          "text": "2ms"
+        },
+        {
+          "key": "D",
+          "text": "1ms"
+        }
+      ],
+      "answer": "C",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-005",
+      "section": "选择题",
+      "number": 5,
+      "type": "choice",
+      "prompt": "(设备) 在操作系统中，为了增加设备分配的灵活性，用户申请设备时应使用(     )",
+      "options": [
+        {
+          "key": "A",
+          "text": "设备号"
+        },
+        {
+          "key": "B",
+          "text": "虚拟设备名"
+        },
+        {
+          "key": "C",
+          "text": "逻辑设备名"
+        },
+        {
+          "key": "D",
+          "text": "物理设备名"
+        }
+      ],
+      "answer": "C",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-006",
+      "section": "选择题",
+      "number": 6,
+      "type": "choice",
+      "prompt": "下面关于独立设备和共享设备的说法中不正确的是（）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "打印机、扫描仪等属于独占设备"
+        },
+        {
+          "key": "B",
+          "text": "对独占设备往往采用静态分配方式"
+        },
+        {
+          "key": "C",
+          "text": "共享设备中的“同时使用”的含义指一个作业尚未撤离，另一作业即可使用，但每一时刻仍只有一个作业启动磁盘，允许它们交替启动"
+        },
+        {
+          "key": "D",
+          "text": "对共享设备往往采用静态分配方式"
+        }
+      ],
+      "answer": "D",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-007",
+      "section": "选择题",
+      "number": 7,
+      "type": "choice",
+      "prompt": "（设备）下面关于设备独立性的论述中正确的是(     )。",
+      "options": [
+        {
+          "key": "A",
+          "text": "设备独立性是指I/O设备具有独立执行I/O功能的一种特性"
+        },
+        {
+          "key": "B",
+          "text": "设备独立性是指用户程序独立于具体使用的物理设备的一种特性"
+        },
+        {
+          "key": "C",
+          "text": "设备独立性是指能独立实现设备共享的一种特性"
+        },
+        {
+          "key": "D",
+          "text": "设备独立性是指设备驱动程序独立于具体使用的物理设备一种特性"
+        }
+      ],
+      "answer": "B",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-008",
+      "section": "选择题",
+      "number": 8,
+      "type": "choice",
+      "prompt": "（磁盘设备）寻道时间是指(    ) 。",
+      "options": [
+        {
+          "key": "A",
+          "text": "由磁头把扇区中的信息读到主存储器所需时间"
+        },
+        {
+          "key": "B",
+          "text": "磁头在移动臂带动下移动到指定柱面所需的时间"
+        },
+        {
+          "key": "C",
+          "text": "指定扇区旋转到磁头下所需的时间"
+        },
+        {
+          "key": "D",
+          "text": "把主存储器中信息写到扇区中所需的时间"
+        }
+      ],
+      "answer": "B",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-009",
+      "section": "选择题",
+      "number": 9,
+      "type": "choice",
+      "prompt": "下面的四个选项中不属于设备与CPU之间数据传送控制方式的是（    ）。",
+      "options": [
+        {
+          "key": "A",
+          "text": "程序直接控制方式"
+        },
+        {
+          "key": "B",
+          "text": "设备控制方式"
+        },
+        {
+          "key": "C",
+          "text": "直接内存访问（DMA）方式"
+        },
+        {
+          "key": "D",
+          "text": "通道控制方式"
+        }
+      ],
+      "answer": "B",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-010",
+      "section": "选择题",
+      "number": 10,
+      "type": "choice",
+      "prompt": "（ ）的基本含义是指应用程序独立于具体使用的物理设备。",
+      "options": [
+        {
+          "key": "A",
+          "text": "设备独立性"
+        },
+        {
+          "key": "B",
+          "text": "逻辑设备表"
+        },
+        {
+          "key": "C",
+          "text": "物理设备表"
+        },
+        {
+          "key": "D",
+          "text": "设备共享性"
+        }
+      ],
+      "answer": "A",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-011",
+      "section": "选择题",
+      "number": 11,
+      "type": "choice",
+      "prompt": "磁盘与主机之间传递数据是以(      )为单位进行的。",
+      "options": [
+        {
+          "key": "A",
+          "text": "字节"
+        },
+        {
+          "key": "B",
+          "text": "字"
+        },
+        {
+          "key": "C",
+          "text": "数据块"
+        },
+        {
+          "key": "D",
+          "text": "文件"
+        }
+      ],
+      "answer": "C",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-012",
+      "section": "选择题",
+      "number": 12,
+      "type": "choice",
+      "prompt": "采用假脱机技术，将磁盘的一部分作为公共缓冲区以代替打印机，用户对打印机的操作实际上是对磁盘的存储操作，用以代替打印机部分是指(      )",
+      "options": [
+        {
+          "key": "A",
+          "text": "独占设备"
+        },
+        {
+          "key": "B",
+          "text": "共享设备"
+        },
+        {
+          "key": "C",
+          "text": "虚拟设备"
+        },
+        {
+          "key": "D",
+          "text": "一般物理设备"
+        }
+      ],
+      "answer": "C",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-013",
+      "section": "选择题",
+      "number": 13,
+      "type": "choice",
+      "prompt": "下列选项中，可用于文件系统管理空闲磁盘块的数据结构是（　　）。［2019年408统考］ Ⅰ．位图 Ⅱ．索引节点 Ⅲ．空闲磁盘块链 Ⅳ．文件分配表（FAT）",
+      "options": [
+        {
+          "key": "A",
+          "text": "仅Ⅰ、Ⅱ"
+        },
+        {
+          "key": "B",
+          "text": "仅Ⅰ、Ⅲ、Ⅳ"
+        },
+        {
+          "key": "C",
+          "text": "仅Ⅰ、Ⅲ"
+        },
+        {
+          "key": "D",
+          "text": "仅Ⅱ、Ⅲ、Ⅳ"
+        }
+      ],
+      "answer": "B",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-014",
+      "section": "选择题",
+      "number": 14,
+      "type": "choice",
+      "prompt": "某软盘有40个磁道，磁头从一个磁道移至另一个磁道需要5ms。文件在磁盘上非连续存放，逻辑上相邻数据块的平均距离为10个磁道，每块的旋转延迟时间及传输时间分别为100ms和25ms，则读取一个100块的文件需要(     )时间。",
+      "options": [
+        {
+          "key": "A",
+          "text": "17500ms"
+        },
+        {
+          "key": "B",
+          "text": "15000 ms"
+        },
+        {
+          "key": "C",
+          "text": "5000ms"
+        },
+        {
+          "key": "D",
+          "text": "25000ms"
+        }
+      ],
+      "answer": "A",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-015",
+      "section": "选择题",
+      "number": 15,
+      "type": "choice",
+      "prompt": "（磁盘）下列算法中用于磁盘移臂操作的是(     )",
+      "options": [
+        {
+          "key": "A",
+          "text": "时间片轮转法"
+        },
+        {
+          "key": "B",
+          "text": "LRU算法"
+        },
+        {
+          "key": "C",
+          "text": "最短寻找时间优先算法"
+        },
+        {
+          "key": "D",
+          "text": "高优先级优先算法"
+        }
+      ],
+      "answer": "C",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-016",
+      "section": "选择题",
+      "number": 16,
+      "type": "choice",
+      "prompt": "在实现了虚拟存储器技术的系统中，当系统发生抖动(thrashing)时，可以采取的有效措施是（  ）。Ⅰ.撤销部分进程 Ⅱ.增加磁盘交换区的容量 Ⅲ.提高用户进程的优先级",
+      "options": [
+        {
+          "key": "A",
+          "text": "I"
+        },
+        {
+          "key": "B",
+          "text": "II"
+        },
+        {
+          "key": "C",
+          "text": "Ⅲ"
+        },
+        {
+          "key": "D",
+          "text": "都不是"
+        }
+      ],
+      "answer": "A",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-017",
+      "section": "选择题",
+      "number": 17,
+      "type": "choice",
+      "prompt": "位示图可用于磁盘空间的管理。假设某系统磁盘共500块，块号从0~499，若用位示图管理这500块磁盘空间，当字长为32位时，第i字节第j位对应的块号是（   ）。（字号与位号都是从0开始）",
+      "options": [
+        {
+          "key": "A",
+          "text": "32i+j"
+        },
+        {
+          "key": "B",
+          "text": "32i+j-1"
+        },
+        {
+          "key": "C",
+          "text": "32i+j-32"
+        },
+        {
+          "key": "D",
+          "text": "32i+j-32-2"
+        }
+      ],
+      "answer": "A",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-018",
+      "section": "判断题",
+      "number": 18,
+      "type": "choice",
+      "prompt": "操作系统中的设备独立性是指用户可以使用不同的物理设备而不必关心其细节。",
+      "options": [
+        {
+          "key": "A",
+          "text": "对"
+        },
+        {
+          "key": "B",
+          "text": "错"
+        }
+      ],
+      "answer": "A",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-019",
+      "section": "判断题",
+      "number": 19,
+      "type": "choice",
+      "prompt": "通道是一种特殊的处理机，它可以独立地执行通道程序，控制 I/O 设备的操作。",
+      "options": [
+        {
+          "key": "A",
+          "text": "对"
+        },
+        {
+          "key": "B",
+          "text": "错"
+        }
+      ],
+      "answer": "A",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-020",
+      "section": "判断题",
+      "number": 20,
+      "type": "choice",
+      "prompt": "通常，一个中央处理器可以连接多个通道，一个通道可以连接多个设备控制器，一个设备控制器可连接多台外围设备。",
+      "options": [
+        {
+          "key": "A",
+          "text": "对"
+        },
+        {
+          "key": "B",
+          "text": "错"
+        }
+      ],
+      "answer": "A",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-021",
+      "section": "判断题",
+      "number": 21,
+      "type": "choice",
+      "prompt": "磁盘调度算法的目的是减少磁盘的平均寻道时间，提高磁盘 I/O 性能。先来先服务算法能使磁头移动距离最短，但可能会导致某些请求长时间得不到服务。",
+      "options": [
+        {
+          "key": "A",
+          "text": "对"
+        },
+        {
+          "key": "B",
+          "text": "错"
+        }
+      ],
+      "answer": "B",
+      "analysis": ""
+    },
+    {
+      "id": "OS-PRAC-DEV-022",
+      "section": "判断题",
+      "number": 22,
+      "type": "choice",
+      "prompt": "磁盘调度算法的目的是减少磁盘的平均寻道时间，提高磁盘 I/O 性能。最短寻道时间优先算法简单公平，但可能导致磁头频繁大幅度移动。",
+      "options": [
+        {
+          "key": "A",
+          "text": "对"
+        },
+        {
+          "key": "B",
+          "text": "错"
+        }
+      ],
+      "answer": "B",
+      "analysis": ""
+    }
+  ]
+}
