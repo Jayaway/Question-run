@@ -205,9 +205,237 @@ MIT © [Jayaway](https://github.com/Jayaway)
 
 ---
 
+## 🎭 卡通形象家族
+
+刷题不再孤单！项目内置了一支 **5 人小分队**，根据你最近 15 题的正确率自动切换出场角色，每个角色都有自己的性格和台词。  
+更重要的是：**亮色版和暗色版各有一套独立的形象配色** —— 同一角色在不同主题下会换上不同的"皮肤"。
+
+### 📸 项目截图速览
+
+<div align="center">
+  <img src="docs/screenshots/light-quiz.webp" width="45%" alt="亮色刷题界面"/>
+  <img src="docs/screenshots/dark-quiz.webp" width="45%" alt="暗色刷题界面"/>
+</div>
+
+<div align="center">
+  <img src="docs/screenshots/light-sidebar.webp" width="45%" alt="亮色题库抽屉"/>
+  <img src="docs/screenshots/dark-sidebar.webp" width="45%" alt="暗色题库抽屉"/>
+</div>
+
+---
+
+### 🌞 亮色版 · 5 位角色
+
+> 整体画风偏暖、扁平、贴纸感，背景为亮色（白/浅黄），色调明亮活泼。
+
+| 角色 | 形象 | 性格 | 适用场景 |
+|---|---|---|---|
+| **Gru 格鲁** | <img src="assets/gru-front.webp" width="80" alt="Gru 亮色版"/> | 严谨的王者，嘴角微沉 | 正确率 ≥ 85% |
+| **Boobo 布布** | <img src="assets/boobo-front.webp" width="80" alt="Boobo 亮色版"/> | 阳光学长，温柔鼓励 | 正确率 60% – 85% |
+| **Waiwai 歪歪** | <img src="assets/waiwai-front.webp" width="80" alt="Waiwai 亮色版"/> | 元气小学生，感叹号常驻 | 中段位的能量补给 |
+| **Dodo 多多** | <img src="assets/dodo-front.webp" width="80" alt="Dodo 亮色版"/> | 圆滚滚的暖心萌物 | 起步阶段陪伴 |
+| **Mimo 米莫** | <img src="assets/mimo-front.webp" width="80" alt="Mimo 亮色版"/> | 软糯学妹，细声安慰 | 正确率 < 60% |
+
+### 🌙 暗色版 · 同一批角色 · 暗色皮肤
+
+> 整体画风偏冷、夜光感，背景为深色（黑/深灰），保留角色识别度但换上更"酷"的色板。
+
+| 角色 | 形象 | 性格（同角色·夜话版） | 适用场景 |
+|---|---|---|---|
+| **Gru 格鲁** | <img src="assets/gru-dark.webp" width="80" alt="Gru 暗色版"/> | 毒舌版王者，冷笑怼人 | 正确率 ≥ 85% |
+| **Boobo 布布** | <img src="assets/boobo-dark.webp" width="80" alt="Boobo 暗色版"/> | 傲娇学长，嘴硬心软 | 正确率 60% – 85% |
+| **Waiwai 歪歪** | <img src="assets/waiwai-dark.webp" width="80" alt="Waiwai 暗色版"/> | 抓狂小学生，感叹号爆裂 | 中段位的反向鞭策 |
+| **Dodo 多多** | <img src="assets/dodo-dark.webp" width="80" alt="Dodo 暗色版"/> | 圆滚滚·夜行版陪练 | 起步阶段陪伴 |
+| **Mimo 米莫** | <img src="assets/mimo-dark.webp" width="80" alt="Mimo 暗色版"/> | 冷脸版软妹，毒舌但不伤人 | 正确率 < 60% |
+
+> 💡 **小彩蛋**：同一个角色在亮 / 暗模式下说的台词完全不同。亮色模式是温柔鼓励，暗色模式是毒舌吐槽 —— 你可以靠切换主题来切换"陪练老师"的态度 😏
+
+### 🎉 答对 / 答错反馈素材
+
+每次答对会从三张庆祝图中随机抽一张，答错则是统一的"傻眼"表情：
+
+| 答对 · Sunglasses | 答对 · Glow | 答对 · Celebrate | 答错 · Speechless |
+|---|---|---|---|
+| <img src="assets/correct-sunglasses.webp" width="80"/> | <img src="assets/correct-glow.webp" width="80"/> | <img src="assets/correct-celebrate.webp" width="80"/> | <img src="assets/wrong-speechless.webp" width="80"/> |
+
+---
+
+### 🪄 它们是怎么出现的？（AI 生成提示词公开）
+
+所有卡通形象均由 AI（基于 Midjourney / SDXL 风格的提示词）生成。  
+**核心思路**：先确定角色的"物种 + 性格 + 配色"，再通过主提示词生成亮色版，叠加 negative prompt + 配色覆盖生成暗色版。
+
+#### 🎨 通用风格基线（所有角色共用）
+
+```
+风格：flat 2D illustration, sticker style, chibi proportions, big head small body,
+thick outlines, soft shading, single character, simple gradient background,
+square 1:1 aspect ratio, 1024x1024, no text, no watermark
+```
+
+#### ☀️ 亮色版主提示词模板
+
+```
+A cute [species] mascot character named [name],
+[color] palette with pastel highlights,
+[personality keywords],
+white/cream soft background, sticker style, vector-like clean lines,
+Duolingo-style friendly look, full body visible, smiling pose
+```
+
+#### 🌙 暗色版主提示词模板
+
+```
+The same [species] mascot character named [name], nighttime version,
+dark navy / charcoal background with neon rim light,
+[same personality but cooler/more sarcastic],
+muted saturation, cinematic noir mood, glowing eyes,
+sticker style, full body visible, slight smirk or eye-roll pose
+```
+
+#### 🧩 5 个角色各自的具体提示词
+
+<details>
+<summary><b>🐉 Gru 格鲁（王者·绿）</b></summary>
+
+**亮色版：**
+```
+A small green dragon mascot with tiny wings and a serious expression,
+forest green (#58cc02) body with golden belly,
+chibi style, confident arms-crossed pose,
+white background, flat 2D sticker, Duolingo-style,
+big round eyes, friendly but stern look
+```
+**暗色版：**
+```
+The same green dragon mascot in nighttime mode,
+dark teal body with glowing neon green outline (#58cc02 glow),
+smirking face, crossed arms, glowing yellow slit pupils,
+charcoal background with subtle star particles,
+cinematic sticker style, sarcastic smirk
+```
+
+</details>
+
+<details>
+<summary><b>🐻 Boobo 布布（暖男·蓝）</b></summary>
+
+**亮色版：**
+```
+A round blue bear cub mascot with big sparkly eyes,
+sky blue (#59b8ff) fur with white belly patch,
+chibi style, gentle wave pose with open arms,
+cream background, soft pastel highlights,
+friendly smile, sticker style, full body visible
+```
+**暗色版：**
+```
+The same blue bear cub mascot at night,
+muted indigo fur with cyan rim light,
+half-lidded eyes, tiny pout, arms folded,
+deep navy background, slight eye-roll,
+sticker style, tsundere mood
+```
+
+</details>
+
+<details>
+<summary><b>🐤 Waiwai 歪歪（元气·黄）</b></summary>
+
+**亮色版：**
+```
+A tiny yellow chick mascot with huge surprised eyes and an exclamation mark above head,
+bright yellow (#ffbf3d) feathers with orange beak,
+chibi style, jumping pose, wings spread wide,
+light yellow background, energetic sticker,
+very expressive shocked face
+```
+**暗色版：**
+```
+The same yellow chick mascot in panic mode at night,
+mustard yellow feathers with red exclamation mark glowing,
+wide panicked eyes, sweat drops flying,
+dark background with motion lines,
+hyperactive sticker style, anime shock
+```
+
+</details>
+
+<details>
+<summary><b>🐤 Dodo 多多（陪伴·橙）</b></summary>
+
+**亮色版：**
+```
+A chubby orange dodo bird mascot with a big round belly,
+warm orange (#ffbf3d) feathers with cream belly,
+chibi style, waddling pose with one foot up,
+soft beige background, cute round sticker,
+sleepy gentle smile, hugging itself
+```
+**暗色版：**
+```
+The same orange dodo bird mascot at night,
+dark amber feathers with soft glowing eyes,
+sitting pose, half-asleep look,
+deep brown background, candle-like warm glow,
+sticker style, cozy sleepy mood
+```
+
+</details>
+
+<details>
+<summary><b>🐰 Mimo 米莫（治愈·粉）</b></summary>
+
+**亮色版：**
+```
+A tiny pink rabbit mascot with floppy ears and big watery eyes,
+pastel pink (#ff9fbd) fur with white paws,
+chibi style, hugging knees pose,
+pale pink background, kawaii sticker,
+shy timid smile, very small body
+```
+**暗色版：**
+```
+The same pink rabbit mascot in nighttime mode,
+dusty rose fur with cold magenta rim light,
+flat deadpan stare, holding a tiny knife metaphorically,
+charcoal background, soft smirk,
+sticker style, slightly unsettling cute
+```
+
+</details>
+
+#### 🛑 Negative Prompt（共用，避免 AI 翻车）
+
+```
+realistic, 3d render, photo, human face, scary, horror, gore,
+multiple characters, text, watermark, signature,
+blurry, low quality, deformed hands, extra fingers
+```
+
+#### 🔄 亮 / 暗版批量生成的工程化做法
+
+```bash
+# 伪代码：用 ComfyUI / SDXL WebUI 跑批量
+for role in gru boobo waiwai dodo mimo; do
+  # 1. 先跑亮色版
+  python gen.py --prompt "$(cat prompts/${role}_light.txt)" \
+                --out assets/${role}-front.webp
+  
+  # 2. 复用同一 seed，加 negative prompt + 配色覆盖跑暗色版
+  python gen.py --prompt "$(cat prompts/${role}_dark.txt)" \
+                --seed $(cat seeds/${role}.txt) \
+                --out assets/${role}-dark.webp
+done
+```
+
+> 🎯 保持 **同一 seed** 是亮 / 暗版"同一个角色"的关键 —— 形象轮廓一致，只换肤色和背景。
+
+---
+
 ## 🙏 致谢
 
-- 五个卡通形象分别是～ 我也忘了叫啥了，你们自己探索去吧。
+- 🎭 5 位卡通形象（Gru / Boobo / Waiwai / Dodo / Mimo）由 AI 生成，亮 / 暗双版本独立绘制
 - 音效由 Web Audio API 实时合成
 - 样式灵感来自 Duolingo
 
