@@ -379,6 +379,8 @@ function closeAllDropdowns() {
 }
 
 function render() {
+  TimerManager.clear("_feedbackDelayTimer");
+  hideFeedback();
   const list = filteredQuestions();
   if (app.index >= list.length) app.index = Math.max(0, list.length - 1);
   renderStats(); renderMode(); renderNav(list); renderProgressSegments(list);
@@ -530,21 +532,67 @@ function checkFillAnswer(input, answer) {
   if (!answerParts.length) return normalizeAnswer(input) === normalizeAnswer(answer);
   return userParts.length === answerParts.length && userParts.every((part, index) => part === answerParts[index]);
 }
+function normalizeMarkers(text) {
+  if (!text) return "";
+  return String(text)
+    .replace(/\(\s*(\d+)\s*\)/g, "【$1】")
+    .replace(/（\s*(\d+)\s*）/g, "【$1】")
+    .replace(/(^|[\s\u3002\uff1b\uff01\uff1f])(\d+)\)\s*/g, "$1【$2】 ");
+}
+
 function escHTML(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 function formatAnalysis(text) {
   if (!text) return [];
   const t = String(text).trim();
   if (!t) return [];
+  // 1. 数字编号 1. 1、 1) — 用捕获组保留编号在开头
   let m = t.match(/(?:^|[\s\u3002\uff1b\uff01\uff1f])\d+[.\u3001\)]\s*/);
-  if (m) { const parts = t.split(/(?:^|[\s\u3002\uff1b\uff01\uff1f])\d+[.\u3001\)]\s*/).filter(p => p.trim()); if (parts.length >= 2) return parts.map(p => p.trim()); }
+  if (m) {
+    const re = /(?:^|[\s\u3002\uff1b\uff01\uff1f])(\d+[.\u3001\)])\s*/g;
+    const parts = t.split(re);
+    const result = [];
+    for (let i = 1; i < parts.length; i += 2) {
+      result.push((parts[i] + " " + (parts[i+1] || "")).trim());
+    }
+    if (result.length >= 2) return result;
+  }
+  // 2. 中文/英文圆括号编号 (1) (2) — 保留 (1) 在前
   m = t.match(/[\uff08(]\s*\d+\s*[\uff09)\]]/);
-  if (m) { const parts = t.split(/[\uff08(]\s*\d+\s*[\uff09)\]]\s*/).filter(p => p.trim()); if (parts.length >= 2) return parts.map(p => p.trim()); }
+  if (m) {
+    const re = /([\uff08(]\s*\d+\s*[\uff09)\]])\s*/g;
+    const parts = t.split(re);
+    const result = [];
+    for (let i = 1; i < parts.length; i += 2) {
+      result.push((parts[i] + " " + (parts[i+1] || "")).trim());
+    }
+    if (result.length >= 2) return result;
+  }
+  // 3. 圆圈数字 ① ② ③ — 保留圆圈在前
   m = t.match(/[\u2460-\u2473]/);
-  if (m) { const parts = t.split(/[\u2460-\u2473]\s*/).filter(p => p.trim()); if (parts.length >= 2) return parts.map(p => p.trim()); }
+  if (m) {
+    const re = /([\u2460-\u2473])\s*/g;
+    const parts = t.split(re);
+    const result = [];
+    for (let i = 1; i < parts.length; i += 2) {
+      result.push((parts[i] + " " + (parts[i+1] || "")).trim());
+    }
+    if (result.length >= 2) return result;
+  }
+  // 4. 中文序号 第一，第二 — 保留 "第一，" 在前
   m = t.match(/\u7b2c[\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\d]+[,\uff0c\u3001]/);
-  if (m) { const parts = t.split(/\u7b2c[\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\d]+[,\uff0c\u3001]\s*/).filter(p => p.trim()); if (parts.length >= 2) return parts.map(p => p.trim()); }
+  if (m) {
+    const re = /(\u7b2c[\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u5341\u767e\u5343\d]+[,\uff0c\u3001])\s*/g;
+    const parts = t.split(re);
+    const result = [];
+    for (let i = 1; i < parts.length; i += 2) {
+      result.push((parts[i] + " " + (parts[i+1] || "")).trim());
+    }
+    if (result.length >= 2) return result;
+  }
+  // 5. 中文分号
   const sc = (t.match(/[\uff1b;]/g) || []).length;
   if (sc >= 2) { const parts = t.split(/[\uff1b;]\s*/).filter(p => p.trim()); if (parts.length >= 2) return parts.map(p => p.trim()); }
+  // 6. 已有换行
   if (/\n/.test(t)) { const parts = t.split(/\n+/).map(p => p.trim()).filter(p => p); if (parts.length >= 2) return parts; }
   return [t];
 }
@@ -560,10 +608,9 @@ function showFeedback(q, correct) {
     els.feedbackIcon.innerHTML = `<img src="./assets/wrong-speechless.webp" class="feedback-icon-img" alt="">`;
   }
   els.feedbackTitle.textContent = correct ? "回答正确" : "回答错误";
-  els.feedbackAnswer.textContent = q.answer || "无";
+  els.feedbackAnswer.innerHTML = '<div class="kp-item kp-item-answer">' + escHTML(normalizeMarkers(q.answer || "无")) + '</div>';
   const hasAnalysis = Boolean(String(q.analysis || "").trim());
-  const kps = formatAnalysis(q.analysis || "");
-  els.feedbackAnalysis.innerHTML = kps.map(p => '<div class="kp-item">' + escHTML(p) + '</div>').join("");
+  els.feedbackAnalysis.innerHTML = '<div class="kp-item">' + escHTML(normalizeMarkers(q.analysis || "")) + '</div>';
   els.feedbackAnalysisBlock.style.display = hasAnalysis ? "grid" : "none";
 }
 function hideFeedback() {
