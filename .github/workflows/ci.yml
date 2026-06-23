@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 检出代码
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 设置 Node.js
         uses: actions/setup-node@v4
@@ -56,7 +56,7 @@ jobs:
     name: 检查失效的资源引用
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: 检查 assets 引用
         run: |
           echo "🔍 检查 assets 目录中所有 .webp/.png/.jpg/.jpeg 是否被引用..."
